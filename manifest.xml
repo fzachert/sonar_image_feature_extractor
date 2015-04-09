@@ -1,0 +1,21 @@
+<package>
+  <description brief="Library for feature-extraction of sonar-images">
+  
+  </description>
+  <author>Fabio Zachert/fzachert@tzi.de</author>
+  <license></license>
+  <url>http://</url>
+  <logo>http://</logo>
+  <depend package="base/cmake" />
+  <!--
+   To add any dependencies use the depend tag
+  <depend package="dummy-dependency-0" />
+	...
+  <depend package="dummy-dependency-n-1" />
+  <depend package="dummy-dependency-n" />
+  -->
+  <depend package="base/types" />
+  <depend package="opencv" />
+  <depend package="image_processing/frame_helper" />
+  <depend package="auv_avalon/machine_learning" />
+</package>
