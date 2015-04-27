@@ -30,7 +30,14 @@ SonarFeatures Detector::detect(base::samples::frame::Frame &frame, base::samples
           blur += 1;
       }
       if(blur > 1 && blur < cvmat.size().width/2){
-        GaussianBlur(cvmat, cvmat, Size(blur,blur), 0);
+	
+	if(config.smooth_mode == GAUSSIAN)	
+	  GaussianBlur(cvmat, cvmat, Size(blur,blur), 0);
+	if(config.smooth_mode == AVG)
+	  cv::blur( cvmat, cvmat, Size( blur, blur ), Point(-1,-1) );
+	if(config.smooth_mode == MEDIAN)
+	  medianBlur(cvmat, cvmat, blur);
+	
       }      
       
       int sobel = config.sobel;
@@ -73,23 +80,43 @@ SonarFeatures Detector::detect(base::samples::frame::Frame &frame, base::samples
       detector.detect( thresholdcv, keypoints);
 
       
+      feat = cluster(thresholdcv, config); 
       
       
-      
-      if(config.debug_mode == 1)
+      if(config.debug_mode == SMOOTHING)
 	frame_helper::FrameHelper::copyMatToFrame(cvmat,debug_frame);
-      else if(config.debug_mode == 2)
+      else if(config.debug_mode == SOBEL)
 	frame_helper::FrameHelper::copyMatToFrame(sobelcv, debug_frame);
-      else if(config.debug_mode == 3)
+      else if(config.debug_mode == THRESHOLD)
 	frame_helper::FrameHelper::copyMatToFrame(thresholdcv, debug_frame);
-      else if(config.debug_mode == 4){
-	Mat im_with_keypoints;
-	drawKeypoints( thresholdcv, keypoints, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-	frame_helper::FrameHelper::copyMatToFrame(im_with_keypoints, debug_frame);
+      else if(config.debug_mode == FEATURES){
+	
+	double ratio = config.sonar_max_range / cvmat.size().height;
+	base::Vector3d origin;
+	origin.x() = (cvmat.size().width/2.0) * ratio;
+	origin.y() = config.sonar_max_range;
+	origin.z() = 0.0;	
+	  
+	  
+	  for(std::vector<Feature>::iterator it = feat.features.begin(); it != feat.features.end(); it++){
+	    base::Vector3d realPoint(origin.x() - it->position.y(), origin.y() - it->position.x(), 0.0);
+	    realPoint /= ratio;
+	    Point p(realPoint.x(), realPoint.y());
+	    int radius = (it->size.x() + it->size.y()) / (ratio * 2.0);
+	    std::cout << "Radius: " << radius << std::endl;
+	    std::cout << it->size<<std::endl;
+	    
+	    circle(cvmat, p,  radius, Scalar(0,0,0,255));
+	    
+	  }
+	  frame_helper::FrameHelper::copyMatToFrame(cvmat, debug_frame);
       }
-  
-    return cluster(thresholdcv, config); 
+    
+    
+    return feat;
 }
+
+
 
 SonarFeatures Detector::cluster(cv::Mat mat, const DetectorConfig &config){
   
@@ -109,14 +136,14 @@ SonarFeatures Detector::cluster(cv::Mat mat, const DetectorConfig &config){
     
   for(std::vector<cv::Point2i>::iterator it = locations.begin(); it != locations.end(); it++){
     base::Vector3d v;
-    v.x() = it->x * ratio;
-    v.y() = it->y * ratio;
+    v.x() = it->y * ratio;
+    v.y() = it->x * ratio;
     v.z() = 0.0;
     
-    v -= origin;
+    v = origin - v;
     double distance = v.norm();
     
-    if(v.x() > config.ignore_min_range && distance < config.sonar_max_range - config.sobel){
+    if(distance > config.ignore_min_range && distance < config.sonar_max_range - config.sobel){
     
       dataPoints.push_back(v);
       dataPointers.push_back(&dataPoints.back());
@@ -135,18 +162,23 @@ SonarFeatures Detector::cluster(cv::Mat mat, const DetectorConfig &config){
   for(std::map< base::Vector3d* , int> ::iterator it = clusteredPoints.begin(); it != clusteredPoints.end(); it++){
     
     int id = it->second;
-    base::Vector3d v = *(it->first);
     
-    analysedCluster[id].number_of_points++;
-    
-    if( v.x() < analysedCluster[id].minX)
-      analysedCluster[id].minX = v.x();
-    if( v.x() > analysedCluster[id].maxX)
-      analysedCluster[id].maxX = v.x();
-    if( v.y() < analysedCluster[id].minY)
-      analysedCluster[id].minY = v.y();
-    if( v.y() > analysedCluster[id].minY)
-      analysedCluster[id].minY = v.y();    
+    if(id >= 0){
+      
+      base::Vector3d v = *(it->first);
+      
+      analysedCluster[id].number_of_points++;
+      
+      if( v.x() < analysedCluster[id].minX)
+	analysedCluster[id].minX = v.x();
+      if( v.x() > analysedCluster[id].maxX)
+	analysedCluster[id].maxX = v.x();
+      if( v.y() < analysedCluster[id].minY)
+	analysedCluster[id].minY = v.y();
+      if( v.y() > analysedCluster[id].maxY)
+	analysedCluster[id].maxY = v.y();
+      
+    }
         
   }
   
@@ -159,13 +191,16 @@ SonarFeatures Detector::cluster(cv::Mat mat, const DetectorConfig &config){
       f.position.x() = (it->maxX + it->minX) * 0.5;
       f.position.y() = (it->maxY + it->minY) * 0.5;
       f.position.z() = 0.0;
+      f.size.x() = (it->maxX - it->minX);
+      f.size.y() = (it->maxY - it->minY);
       feat.features.push_back(f);
     }
     
   }
   
+  feat.number_of_features = feat.features.size();
+  feat.number_of_points = dataPointers.size();
+  
   return feat;
 }
-
-
 

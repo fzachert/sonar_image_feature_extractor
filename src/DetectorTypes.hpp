@@ -16,17 +16,46 @@ namespace sonar_image_feature_extractor
    struct Feature{
      double confidence;
      base::Vector3d position;
+     base::Vector3d size;
      Destricptor desc;
      
    };
    
+   struct SonarConfig{
+     base::Orientation orientation;
+     
+     double verticalOpening;
+     double horizontalOpening;
+     double maximumRange;
+     double minimumRange;
+   }; 
+   
+   
    struct SonarFeatures{
      base::Time time;
+     SonarConfig conf;
+     
+     int number_of_features;
+     int number_of_points;
      std::vector<Feature> features;
    };
+   
+
+   enum SMOOTH_MODE {
+            GAUSSIAN = 0,
+            AVG = 1,
+            MEDIAN = 2
+   };
+   
+   enum DEBUG_MODE {
+	  NO_DEBUG = 0,
+	  SMOOTHING = 1,
+	  SOBEL = 2,
+	  THRESHOLD = 3,
+	  FEATURES = 4     
+   };   
   
   struct DetectorConfig{
-    int debug_mode;
     
     int blur;
     int morph;
@@ -35,6 +64,9 @@ namespace sonar_image_feature_extractor
     int cluster_min_size;
     int cluster_max_size;
     int cluster_noise;
+    
+    SMOOTH_MODE smooth_mode;
+    DEBUG_MODE debug_mode;
     
     double sonar_max_range; //meter
     double sonar_opening_angle; //radian
