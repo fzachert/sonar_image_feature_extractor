@@ -53,7 +53,14 @@ namespace sonar_image_feature_extractor
 	  SOBEL = 2,
 	  THRESHOLD = 3,
 	  FEATURES = 4     
-   };   
+   };
+
+    enum THRESHOLD_MODE {
+	  ABSOLUTE = 0,
+	  ADAPTIVE_MEAN = 1,
+	  ADAPTIVE_GAUSSIAN = 2,
+	  OTSU = 3
+    };
   
   struct DetectorConfig{
     
@@ -67,6 +74,7 @@ namespace sonar_image_feature_extractor
     
     SMOOTH_MODE smooth_mode;
     DEBUG_MODE debug_mode;
+    THRESHOLD_MODE threshold_mode;
     
     double sonar_max_range; //meter
     double sonar_opening_angle; //radian

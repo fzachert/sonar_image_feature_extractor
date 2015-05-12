@@ -19,7 +19,7 @@ namespace sonar_image_feature_extractor
   struct Cluster{
    
     Cluster() : number_of_points(0), minX(std::numeric_limits<double>::max()), minY(std::numeric_limits<double>::max()),
-	maxX(std::numeric_limits<double>::min()), maxY(std::numeric_limits<double>::min()) {}
+	maxX(-std::numeric_limits<double>::max()), maxY(-std::numeric_limits<double>::max()) {}
     
     int number_of_points;
     double minX, minY, maxX, maxY;

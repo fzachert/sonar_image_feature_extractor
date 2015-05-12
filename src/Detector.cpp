@@ -24,6 +24,7 @@ SonarFeatures Detector::detect(base::samples::frame::Frame &frame, base::samples
       Mat smallcv(cvmat.size(), 8, 1);
       Mat thresholdcv(cvmat.size(), 8, 1);
       //Mat morphcv(cvGetSize(&cvmat), 8, 1);
+      Mat debugMat;
       
       int blur = config.blur;
       if(!(blur % 2)){
@@ -61,7 +62,28 @@ SonarFeatures Detector::detect(base::samples::frame::Frame &frame, base::samples
       
       //cvThreshold(sobelcv, thresholdcv, _threshold.get() * max, max , CV_THRESH_BINARY); //CV_THRESH_TOZERO);
       if(config.threshold > 0.0){
-        threshold(smallcv, thresholdcv, config.threshold * max, 255 , CV_THRESH_BINARY); //CV_THRESH_TOZERO);
+	
+	if(config.threshold_mode == ABSOLUTE)
+	{
+	  //Absolute thresholding
+	  threshold(smallcv, thresholdcv, config.threshold * max, 255 , CV_THRESH_BINARY); //CV_THRESH_TOZERO);
+	}
+	else if(config.threshold_mode == ADAPTIVE_MEAN)
+	{
+	  //Adaptive threshold with mean of neighborhood, use 7 neighborhood
+	  adaptiveThreshold(smallcv, thresholdcv, 255, ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY, 7 ,0);
+	}
+	else if(config.threshold_mode == ADAPTIVE_GAUSSIAN)
+	{
+	  //Adaptive threshold with weighted gaussian mean of neighborhood
+	  adaptiveThreshold(smallcv, thresholdcv, 255, ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY, 7, 0);
+	}
+	else if(config.threshold_mode == OTSU)
+	{
+	  //Adaptive threshold based on Otsu's method -> analysis of histogramm
+	  threshold(smallcv, thresholdcv, 0, 255, CV_THRESH_BINARY + CV_THRESH_OTSU);
+	}
+	
       }
       else{
         smallcv.copyTo(thresholdcv);
@@ -83,13 +105,19 @@ SonarFeatures Detector::detect(base::samples::frame::Frame &frame, base::samples
       feat = cluster(thresholdcv, config); 
       
       
-      if(config.debug_mode == SMOOTHING)
-	frame_helper::FrameHelper::copyMatToFrame(cvmat,debug_frame);
-      else if(config.debug_mode == SOBEL)
-	frame_helper::FrameHelper::copyMatToFrame(sobelcv, debug_frame);
-      else if(config.debug_mode == THRESHOLD)
-	frame_helper::FrameHelper::copyMatToFrame(thresholdcv, debug_frame);
-      else if(config.debug_mode == FEATURES){
+      if(config.debug_mode == SMOOTHING){
+	debugMat = cvmat.clone();
+	//frame_helper::FrameHelper::copyMatToFrame(cvmat,debug_frame);
+      }
+      else if(config.debug_mode == SOBEL){
+	debugMat = sobelcv.clone();
+	//frame_helper::FrameHelper::copyMatToFrame(sobelcv, debug_frame);
+      }
+      else if(config.debug_mode == THRESHOLD){
+	debugMat = thresholdcv.clone();
+	//frame_helper::FrameHelper::copyMatToFrame(thresholdcv, debug_frame);
+      }
+      if(config.debug_mode != NO_DEBUG){
 	
 	double ratio = config.sonar_max_range / cvmat.size().height;
 	base::Vector3d origin;
@@ -103,13 +131,13 @@ SonarFeatures Detector::detect(base::samples::frame::Frame &frame, base::samples
 	    realPoint /= ratio;
 	    Point p(realPoint.x(), realPoint.y());
 	    int radius = (it->size.x() + it->size.y()) / (ratio * 2.0);
-	    std::cout << "Radius: " << radius << std::endl;
-	    std::cout << it->size<<std::endl;
+	    //std::cout << "Radius: " << radius << std::endl;
+	    //std::cout << it->size<<std::endl;
 	    
-	    circle(cvmat, p,  radius, Scalar(0,0,0,255));
+	    circle(debugMat, p,  radius, Scalar(255,255,255,255));
 	    
 	  }
-	  frame_helper::FrameHelper::copyMatToFrame(cvmat, debug_frame);
+	  frame_helper::FrameHelper::copyMatToFrame(debugMat, debug_frame);
       }
     
     
@@ -142,8 +170,9 @@ SonarFeatures Detector::cluster(cv::Mat mat, const DetectorConfig &config){
     
     v = origin - v;
     double distance = v.norm();
+    double angle = std::fabs( std::atan2(v.y(), v.x()) );
     
-    if(distance > config.ignore_min_range && distance < config.sonar_max_range - config.sobel){
+    if(distance > config.ignore_min_range && distance < config.sonar_max_range - config.sobel  && std::fabs( (config.sonar_opening_angle * 0.5) - angle) > 0.02 ){
     
       dataPoints.push_back(v);
       dataPointers.push_back(&dataPoints.back());
