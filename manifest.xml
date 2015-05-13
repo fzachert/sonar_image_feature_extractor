@@ -18,4 +18,5 @@
   <depend package="opencv" />
   <depend package="image_processing/frame_helper" />
   <depend package="auv_avalon/machine_learning" />
+  <depend package="auv_avalon/dsp_acoustics" />
 </package>

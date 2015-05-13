@@ -1,22 +1,30 @@
-#ifndef _SONARIMAGEFEATURE_DETECTOR_HPP_
-#define _SONARIMAGEFEATURE_DETECTOR_HPP_
+#ifndef _SONARIMAGEFEATURE_SONARPROCESSING_HPP_
+#define _SONARIMAGEFEATURE_SONARPROCESSING_HPP_
 
 #include "DetectorTypes.hpp"
 #include <vector>
 #include <list>
 #include <limits>
-#include <base/samples/Frame.hpp>
-#include "opencv2/opencv.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
+#include <dsp_acoustics/FIRFilter.h>
 #include <machine_learning/DBScan.hpp>
+#include <base/samples/SonarScan.hpp>
+#include <base/Eigen.hpp>
 
 namespace sonar_image_feature_extractor
 {
   
+  struct SonarPeak{
+    
+    base::Vector2d pos;
+    double range;
+    double angle;
+  };
+  
+  
   /**
    * This class represents the feature-detector, based on image-processing
    */
-   class Detector{
+   class SonarProcessing{
    private:
      
      /**
@@ -25,7 +33,7 @@ namespace sonar_image_feature_extractor
       *	@param config: reference to the detector-configuration
       * @return: vector of sonar-features 
       */
-     SonarFeatures cluster(cv::Mat mat, const DetectorConfig &config);
+     SonarFeatures cluster(std::vector<SonarPeak> &peaks, const DetectorConfig &config);
      
      
    public:
@@ -41,7 +49,7 @@ namespace sonar_image_feature_extractor
       * @param config: Configuration of the detector
       * @return: Vector of sonar-features
       */
-     SonarFeatures detect(base::samples::frame::Frame &frame, base::samples::frame::Frame &debug_frame, const DetectorConfig &config); 
+     SonarFeatures detect(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config); 
    };
   
 

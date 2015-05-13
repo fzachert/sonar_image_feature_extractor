@@ -40,6 +40,21 @@ namespace sonar_image_feature_extractor
      std::vector<Feature> features;
    };
    
+   
+  /**
+   * This class represents one 2d-cluster
+   * The cluster is defined by the number of datapoints, and the range of values
+   */   
+    struct Cluster{
+   
+    Cluster() : number_of_points(0), minX(std::numeric_limits<double>::max()), minY(std::numeric_limits<double>::max()),
+	maxX(-std::numeric_limits<double>::max()), maxY(-std::numeric_limits<double>::max()) {}
+    
+    int number_of_points;
+    double minX, minY, maxX, maxY;
+    
+  };   
+   
 
    enum SMOOTH_MODE {
             GAUSSIAN = 0,
