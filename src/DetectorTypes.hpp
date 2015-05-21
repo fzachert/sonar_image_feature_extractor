@@ -40,6 +40,13 @@ namespace sonar_image_feature_extractor
      std::vector<Feature> features;
    };
    
+  struct SonarPeak{
+    
+    base::Vector2d pos;
+    double range;
+    double angle;
+  };   
+   
    
   /**
    * This class represents one 2d-cluster
@@ -52,6 +59,9 @@ namespace sonar_image_feature_extractor
     
     int number_of_points;
     double minX, minY, maxX, maxY;
+    
+    double variance;
+    double contrast;
     
   };   
    
@@ -83,6 +93,7 @@ namespace sonar_image_feature_extractor
     int morph;
     int sobel;
     double threshold;
+    int adaptive_threshold_neighborhood;
     int cluster_min_size;
     int cluster_max_size;
     int cluster_noise;

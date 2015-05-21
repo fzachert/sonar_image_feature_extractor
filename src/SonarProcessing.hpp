@@ -2,6 +2,7 @@
 #define _SONARIMAGEFEATURE_SONARPROCESSING_HPP_
 
 #include "DetectorTypes.hpp"
+#include "Classifier.hpp"
 #include <vector>
 #include <list>
 #include <limits>
@@ -9,16 +10,11 @@
 #include <machine_learning/DBScan.hpp>
 #include <base/samples/SonarScan.hpp>
 #include <base/Eigen.hpp>
+#include "opencv2/opencv.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
 
 namespace sonar_image_feature_extractor
 {
-  
-  struct SonarPeak{
-    
-    base::Vector2d pos;
-    double range;
-    double angle;
-  };
   
   
   /**
@@ -27,14 +23,17 @@ namespace sonar_image_feature_extractor
    class SonarProcessing{
    private:
      
+     Classifier classifier;
+     
      /**
       * This function applies clustering to the preprocessed sonar-image
       * @param mat: binary image
       *	@param config: reference to the detector-configuration
       * @return: vector of sonar-features 
       */
-     SonarFeatures cluster(std::vector<SonarPeak> &peaks, const DetectorConfig &config);
+     std::vector<Cluster> cluster(std::vector<SonarPeak> &peaks, const DetectorConfig &config);
      
+     std::vector<SonarPeak> process(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config);
      
    public:
      /**
@@ -49,7 +48,11 @@ namespace sonar_image_feature_extractor
       * @param config: Configuration of the detector
       * @return: Vector of sonar-features
       */
-     SonarFeatures detect(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config); 
+     SonarFeatures detect(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config);
+     
+     void learn(base::samples::SonarScan &input, const DetectorConfig &config);
+     
+     
    };
   
 
