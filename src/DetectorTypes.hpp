@@ -45,6 +45,21 @@ namespace sonar_image_feature_extractor
     base::Vector2d pos;
     double range;
     double angle;
+    
+    double norm(){
+      return range;      
+    }
+    
+    SonarPeak operator-(const SonarPeak& other){
+      SonarPeak result;
+      result.pos = this->pos - other.pos;
+      result.range = result.pos.norm();
+      result.angle = std::atan2(result.pos.y(),result.pos.x()); 
+      
+      return result;
+    }
+    
+    
   };   
    
    

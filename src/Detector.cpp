@@ -180,7 +180,7 @@ SonarFeatures Detector::cluster(cv::Mat mat, const DetectorConfig &config){
     
   }
   
-  machine_learning::DBScan scan(&dataPointers, config.cluster_min_size, config.cluster_noise); 
+  machine_learning::DBScan<base::Vector3d> scan(&dataPointers, config.cluster_min_size, config.cluster_noise); 
   std::map< base::Vector3d* , int> clusteredPoints = scan.scan();
   
   int numberOfCluster = scan.getClusterCount();

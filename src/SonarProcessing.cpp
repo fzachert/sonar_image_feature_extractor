@@ -135,9 +135,42 @@ return peaks;
 
 std::vector<Cluster> SonarProcessing::cluster(std::vector<SonarPeak> &peaks, const DetectorConfig &config)
 {
-std::vector<Cluster> cluster;
+  std::vector<Cluster> analysedCluster;
+  std::list<SonarPeak*> pPeaks;
 
-
-
-return cluster;  
+  for(int i = 0; i < peaks.size(); i++){
+    
+    pPeaks.push_back( &peaks[i]);    
+  }
+  
+  machine_learning::DBScan<SonarPeak> scan(&pPeaks, config.cluster_min_size, config.cluster_noise);
+  std::map< SonarPeak*, int> clusteredPoints = scan.scan();
+  
+  analysedCluster.resize(scan.getClusterCount());
+  
+  for(std::map< SonarPeak* , int> ::iterator it = clusteredPoints.begin(); it != clusteredPoints.end(); it++){
+    
+    int id = it->second;
+    
+    if(id >= 0){
+      
+      SonarPeak p = *(it->first);
+      
+      analysedCluster[id].number_of_points++;
+      
+      if( p.pos.x() < analysedCluster[id].minX)
+	analysedCluster[id].minX = p.pos.x();
+      if( p.pos.x() > analysedCluster[id].maxX)
+	analysedCluster[id].maxX = p.pos.x();
+      if( p.pos.y() < analysedCluster[id].minY)
+	analysedCluster[id].minY = p.pos.y();
+      if( p.pos.y() > analysedCluster[id].maxY)
+	analysedCluster[id].maxY = p.pos.y();
+      
+    }
+        
+  }  
+  
+  
+  return analysedCluster;  
 }
