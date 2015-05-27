@@ -3,6 +3,8 @@
 using namespace cv;
 using namespace sonar_image_feature_extractor;
 
+static double angular_resolution = 0.5;
+static double range_resolution = 0.008;
 
 void SonarProcessing::init(){
   
@@ -15,7 +17,13 @@ SonarFeatures SonarProcessing::detect(base::samples::SonarScan &input, base::sam
   
   std::vector<SonarPeak> peaks = process(input, debug, config);
   
+  
+  std::cout << "Start clustering with " << peaks.size() << " peaks." << std::endl;
+  base::Time start = base::Time::now();
+  
   std::vector<Cluster> clusters = cluster(peaks, config);
+  std::cout << "Clustering time: " << base::Time::now().toSeconds() - start.toSeconds() << std::endl;
+  
   
   for(std::vector<Cluster>::iterator it = clusters.begin(); it != clusters.end(); it++)
   {
@@ -143,7 +151,8 @@ std::vector<Cluster> SonarProcessing::cluster(std::vector<SonarPeak> &peaks, con
     pPeaks.push_back( &peaks[i]);    
   }
   
-  machine_learning::DBScan<SonarPeak> scan(&pPeaks, config.cluster_min_size, config.cluster_noise);
+  //machine_learning::DBScan<SonarPeak> scan(&pPeaks, config.cluster_min_size, config.cluster_noise);
+  machine_learning::DBScan<SonarPeak> scan(&pPeaks, config.cluster_min_size, config.cluster_noise, false, 1.0, distance);
   std::map< SonarPeak*, int> clusteredPoints = scan.scan();
   
   analysedCluster.resize(scan.getClusterCount());
@@ -174,3 +183,10 @@ std::vector<Cluster> SonarProcessing::cluster(std::vector<SonarPeak> &peaks, con
   
   return analysedCluster;  
 }
+
+double SonarProcessing::distance(SonarPeak *p1, SonarPeak *p2)
+{
+  return (p1->pos - p2->pos).norm();
+}
+
+

@@ -36,6 +36,7 @@ namespace sonar_image_feature_extractor
      std::vector<SonarPeak> process(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config);
      
    public:
+     
      /**
       * Initialise the detector: reset the filter
       */
@@ -52,6 +53,8 @@ namespace sonar_image_feature_extractor
      
      void learn(base::samples::SonarScan &input, const DetectorConfig &config);
      
+     
+     static double distance(SonarPeak *p1, SonarPeak *p2);
      
    };
   
