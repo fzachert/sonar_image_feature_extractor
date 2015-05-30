@@ -31,9 +31,9 @@ namespace sonar_image_feature_extractor
       *	@param config: reference to the detector-configuration
       * @return: vector of sonar-features 
       */
-     std::vector<Cluster> cluster(std::vector<SonarPeak> &peaks, const DetectorConfig &config);
+     std::vector<Cluster> cluster(std::vector<SonarPeak> &peaks, const DetectorConfig &config, base::samples::SonarScan &scan);
      
-     std::vector<SonarPeak> process(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config);
+     std::vector<SonarPeak> process(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config, DebugData &dd);
      
    public:
      
@@ -49,12 +49,13 @@ namespace sonar_image_feature_extractor
       * @param config: Configuration of the detector
       * @return: Vector of sonar-features
       */
-     SonarFeatures detect(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config);
+     SonarFeatures detect(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config, DebugData &dd);
      
      void learn(base::samples::SonarScan &input, const DetectorConfig &config);
      
      
      static double distance(SonarPeak *p1, SonarPeak *p2);
+     static double mahalanobis_distance(SonarPeak *p1, SonarPeak *p2);
      
    };
   

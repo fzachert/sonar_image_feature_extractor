@@ -4,6 +4,7 @@
 #include <base/Eigen.hpp>
 #include <base/samples/RigidBodyState.hpp>
 #include <base/Time.hpp>
+#include <base/samples/Pointcloud.hpp>
 #include <vector>
 
 namespace sonar_image_feature_extractor
@@ -101,6 +102,11 @@ namespace sonar_image_feature_extractor
 	  ADAPTIVE_GAUSSIAN = 2,
 	  OTSU = 3
     };
+    
+    enum DISTANCE_MODE {
+      EUKLIDIAN = 0,
+      MAHALANOBIS =1
+    };
   
   struct DetectorConfig{
     
@@ -111,17 +117,26 @@ namespace sonar_image_feature_extractor
     int adaptive_threshold_neighborhood;
     int cluster_min_size;
     int cluster_max_size;
-    int cluster_noise;
+    double cluster_noise;
     
     SMOOTH_MODE smooth_mode;
     DEBUG_MODE debug_mode;
     THRESHOLD_MODE threshold_mode;
+    DISTANCE_MODE distance_mode;
     
     double sonar_max_range; //meter
     double sonar_opening_angle; //radian
     double ignore_min_range; //meter
    
   }; 
+  
+  struct DebugData{
+    std::vector<Cluster> cluster;
+    double entropy;
+    base::samples::Pointcloud points;
+    
+  };
+  
 
 } // end namespace sonar_image_feature_extractor
 

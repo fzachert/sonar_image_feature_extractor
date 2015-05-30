@@ -1,29 +1,35 @@
 #include "SonarProcessing.hpp"
+#include "ProcessingTools.hpp"
 
 using namespace cv;
 using namespace sonar_image_feature_extractor;
 
 static double angular_resolution = 0.5;
 static double range_resolution = 0.008;
+static double sin_angular_resolution = 0.00872653549;
 
 void SonarProcessing::init(){
   
 }
 
-SonarFeatures SonarProcessing::detect(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config)
+SonarFeatures SonarProcessing::detect(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config, DebugData &dd)
 {
   
   SonarFeatures result;
   
-  std::vector<SonarPeak> peaks = process(input, debug, config);
+  std::vector<SonarPeak> peaks = process(input, debug, config, dd);
   
   
   std::cout << "Start clustering with " << peaks.size() << " peaks." << std::endl;
   base::Time start = base::Time::now();
   
-  std::vector<Cluster> clusters = cluster(peaks, config);
+  std::vector<Cluster> clusters = cluster(peaks, config, input);
   std::cout << "Clustering time: " << base::Time::now().toSeconds() - start.toSeconds() << std::endl;
   
+  if(config.debug_mode == FEATURES)
+    debug = input;
+  
+  dd.cluster = clusters;
   
   for(std::vector<Cluster>::iterator it = clusters.begin(); it != clusters.end(); it++)
   {
@@ -37,7 +43,7 @@ SonarFeatures SonarProcessing::detect(base::samples::SonarScan &input, base::sam
   return result;
 } 
 
-std::vector<SonarPeak> SonarProcessing::process(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config)
+std::vector<SonarPeak> SonarProcessing::process(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config, DebugData &dd)
 {
   SonarFeatures feat;
   std::vector<SonarPeak> peaks;
@@ -53,44 +59,22 @@ std::vector<SonarPeak> SonarProcessing::process(base::samples::SonarScan &input,
   }
   
   Mat sonar_mat;
-  sonar_mat = Mat(input.number_of_bins, input.number_of_beams, CV_8U, (void*) input.data.data() );
+  sonar_mat = Mat(input.number_of_beams, input.number_of_bins, CV_8U, (void*) input.data.data() );
   
-  int blur = config.blur;
-  if(!(blur%2)){
-    blur += 1;
-  }  
-  //Smoothing
-  if(config.smooth_mode == AVG){
-    cv::blur( sonar_mat, sonar_mat, Size(blur, 1), Point(-1,-1));
-  }else if(config.smooth_mode == GAUSSIAN){
-    cv::GaussianBlur( sonar_mat, sonar_mat, Size(blur, 1) ,0);
-  }else if(config.smooth_mode == MEDIAN){
-    cv::medianBlur(sonar_mat, sonar_mat, blur);
-  }
+  smooth( sonar_mat, config.blur, config.smooth_mode);
   
   if(config.debug_mode == SMOOTHING){
     debug.data.assign(sonar_mat.datastart, sonar_mat.dataend);
   }
     
-  double min,max;
-  cv::minMaxLoc( sonar_mat, &min, &max);
   
-  //Thresholding
-  if(config.threshold_mode == ABSOLUTE)
-    threshold(sonar_mat, sonar_mat, config.threshold * max, 255, CV_THRESH_BINARY);
-  else if(config.threshold_mode == ADAPTIVE_MEAN)
-    adaptiveThreshold(sonar_mat, sonar_mat, 255, ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY, 15 ,config.threshold * max);
-  else if(config.threshold_mode == ADAPTIVE_GAUSSIAN)
-    adaptiveThreshold(sonar_mat, sonar_mat, 255, ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY, 15, config.threshold * max);
-  else if(config.threshold_mode == OTSU)
-    threshold(sonar_mat, sonar_mat, 0 , 255 , CV_THRESH_BINARY + CV_THRESH_OTSU);
+  threshold( sonar_mat, config.threshold_mode, config.threshold, config.adaptive_threshold_neighborhood);  
   
   if(config.debug_mode == THRESHOLD){
     debug.data.assign(sonar_mat.datastart, sonar_mat.dataend);
   }  
   
-  std::vector<cv::Point2i> locations;
-  
+  std::vector<cv::Point2i> locations;  
   
   if( cv::countNonZero( sonar_mat) > 0)
     cv::findNonZero(sonar_mat, locations);
@@ -98,50 +82,34 @@ std::vector<SonarPeak> SonarProcessing::process(base::samples::SonarScan &input,
   peaks.reserve(locations.size());
   
   double range_scale = config.sonar_max_range / input.number_of_bins;  
+  dd.points.points.clear();
   
   for(std::vector<cv::Point2i>::iterator it = locations.begin(); it != locations.end(); it++){
     
     SonarPeak peak;
-    peak.angle = (input.start_bearing + (input.angular_resolution * it->y) ).rad;
+    peak.angle = ((input.angular_resolution * it->y) - input.start_bearing ).rad;
     peak.range = range_scale * it->x;
     peak.pos.x() = cos(peak.angle) * peak.range;
     peak.pos.y() = sin(peak.angle) * peak.range;
+    
+    base::Vector3d p;
+    p.x() = peak.pos.x();
+    p.y() = peak.pos.y();
+    p.z() = 0.0;
+    dd.points.points.push_back(p);
+    
+    //std::cout << "point: " << it->x << " " << it->y << std::endl;
+    //std::cout << "Angle: " << peak.angle << " range: " << peak.range << "Pos: " << peak.pos.x() << " " << peak.pos.y() << std::endl;
     
     peaks.push_back(peak);
   }
   
   
-/*    
-  for( int i = 0; i < input.number_of_beams; i++){
-    base::samples::SonarBeam beam;
-        
-    base::Angle angle = base::Angle::fromRad( input.start_bearing.getRad() - (i * input.angular_resolution.getRad())  );
-    //std::cout << "Angle: " << angle << " " << input.start_bearing.getRad() << " " << input.angular_resolution.getRad() <<  std::endl;
-    
-    input.getSonarBeam( angle,  beam);
-    base::samples::SonarBeam filtered(beam);
-    base::samples::SonarBeam derivative(beam);
-    
-    //filtered.beam[ (int)( filtered.beam.size() * 0.6)  ] = 255;
-    
-    dsp::movingAverageFilterSym<std::vector<uint8_t>::iterator, std::vector<uint8_t>::iterator, uint8_t>(beam.beam.begin(), beam.beam.end(), filtered.beam.begin() , config.blur);
-    //dsp::flipSignal<std::vector<uint8_t>::iterator, std::vector<uint8_t>::iterator>(beam.beam.begin(), beam.beam.end(), fifilltered.beam.begin());
-    dsp::derivativeSignal<std::vector<uint8_t>::iterator, std::vector<uint8_t>::iterator>(filtered.beam.begin(), filtered.beam.end(), derivative.beam.begin());
-    
-    if(config.debug_mode == SMOOTHING){
-      debug.addSonarBeam(filtered, false);
-    }
-    if(config.debug_mode == SOBEL){
-      debug.addSonarBeam(derivative, false);
-    }
-    
-  }*/ 
-  
 return peaks;  
   
 }
 
-std::vector<Cluster> SonarProcessing::cluster(std::vector<SonarPeak> &peaks, const DetectorConfig &config)
+std::vector<Cluster> SonarProcessing::cluster(std::vector<SonarPeak> &peaks, const DetectorConfig &config, base::samples::SonarScan &sonar_scan)
 {
   std::vector<Cluster> analysedCluster;
   std::list<SonarPeak*> pPeaks;
@@ -151,11 +119,27 @@ std::vector<Cluster> SonarProcessing::cluster(std::vector<SonarPeak> &peaks, con
     pPeaks.push_back( &peaks[i]);    
   }
   
-  //machine_learning::DBScan<SonarPeak> scan(&pPeaks, config.cluster_min_size, config.cluster_noise);
-  machine_learning::DBScan<SonarPeak> scan(&pPeaks, config.cluster_min_size, config.cluster_noise, false, 1.0, distance);
-  std::map< SonarPeak*, int> clusteredPoints = scan.scan();
+  Mat debug_mat;
   
-  analysedCluster.resize(scan.getClusterCount());
+  machine_learning::DBScan<SonarPeak> *scan;
+  
+  if(config.distance_mode == EUKLIDIAN)
+    scan = new machine_learning::DBScan<SonarPeak>(&pPeaks, config.cluster_min_size, config.cluster_noise, false, 1.0, distance);
+  else if(config.distance_mode == MAHALANOBIS)
+    scan = new machine_learning::DBScan<SonarPeak>(&pPeaks, config.cluster_min_size, config.cluster_noise, false, 1.0, mahalanobis_distance);
+    
+  std::map< SonarPeak*, int> clusteredPoints = scan->scan();
+  
+  analysedCluster.resize(scan->getClusterCount());
+  
+  double range_scale = config.sonar_max_range / sonar_scan.number_of_bins;
+  uint8_t color_step = 255 / scan->getClusterCount();
+  if(config.debug_mode == FEATURES){
+    
+    debug_mat = Mat(sonar_scan.number_of_beams, sonar_scan.number_of_bins, CV_8U, (void*) sonar_scan.data.data() );
+    debug_mat.setTo(0);   
+  
+  }
   
   for(std::map< SonarPeak* , int> ::iterator it = clusteredPoints.begin(); it != clusteredPoints.end(); it++){
     
@@ -176,6 +160,15 @@ std::vector<Cluster> SonarProcessing::cluster(std::vector<SonarPeak> &peaks, con
       if( p.pos.y() > analysedCluster[id].maxY)
 	analysedCluster[id].maxY = p.pos.y();
       
+      
+      if(config.debug_mode == FEATURES){
+	int angle_index =  abs(int((p.angle-sonar_scan.start_bearing.rad)/sonar_scan.angular_resolution.rad));
+	int range_index = p.range / range_scale;
+	debug_mat.at<uint8_t>(angle_index, range_index) = (id +1) * color_step;
+	//std::cout << "Angle idx: " << angle_index << " Range idx: " << range_index << std::endl;
+      }
+      
+      
     }
         
   }  
@@ -183,6 +176,22 @@ std::vector<Cluster> SonarProcessing::cluster(std::vector<SonarPeak> &peaks, con
   
   return analysedCluster;  
 }
+
+double SonarProcessing::mahalanobis_distance(SonarPeak *p1, SonarPeak *p2)
+{
+  double cross_resolution = (std::fabs( sin_angular_resolution * p1->range) 
+	+ std::fabs(sin_angular_resolution * p2->range)) * 0.5;
+	
+  base::Matrix2d cov = base::Matrix2d::Zero();
+  cov(0,0) = 1.0;
+  cov(1,1) = cross_resolution / range_resolution;
+  Eigen::Rotation2D<double> rot( (p1->angle + p2->angle) * 0.5  );
+  
+  cov = rot * cov;
+  
+  return std::sqrt(  (p1->pos - p2->pos).transpose() * cov.inverse() * (p1->pos - p2->pos) ) ;   
+}
+
 
 double SonarProcessing::distance(SonarPeak *p1, SonarPeak *p2)
 {
