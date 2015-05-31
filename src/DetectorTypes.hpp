@@ -130,6 +130,11 @@ namespace sonar_image_feature_extractor
    
   }; 
   
+  struct SVMConfig{
+    std::string config_file;
+    
+  };
+  
   struct DebugData{
     std::vector<Cluster> cluster;
     double entropy;

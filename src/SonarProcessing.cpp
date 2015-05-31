@@ -34,9 +34,9 @@ SonarFeatures SonarProcessing::detect(base::samples::SonarScan &input, base::sam
   for(std::vector<Cluster>::iterator it = clusters.begin(); it != clusters.end(); it++)
   {
     
-    if(classifier.classify(*it, config)){
-      //TODO ad feature to result
-    }
+//     if(classifier.classify(*it, config)){
+//       //TODO ad feature to result
+//     }
     
   }
   
@@ -124,11 +124,13 @@ std::vector<Cluster> SonarProcessing::cluster(std::vector<SonarPeak> &peaks, con
   machine_learning::DBScan<SonarPeak> *scan;
   
   if(config.distance_mode == EUKLIDIAN)
-    scan = new machine_learning::DBScan<SonarPeak>(&pPeaks, config.cluster_min_size, config.cluster_noise, false, 1.0, distance);
+    scan = new machine_learning::DBScan<SonarPeak>(&pPeaks, 1, config.cluster_noise, false, 1.0, distance, true);
   else if(config.distance_mode == MAHALANOBIS)
-    scan = new machine_learning::DBScan<SonarPeak>(&pPeaks, config.cluster_min_size, config.cluster_noise, false, 1.0, mahalanobis_distance);
+    scan = new machine_learning::DBScan<SonarPeak>(&pPeaks, 1, config.cluster_noise, false, 1.0, mahalanobis_distance, true);
     
+  //std::cout << "Before scan" << std::endl;
   std::map< SonarPeak*, int> clusteredPoints = scan->scan();
+  //std::cout << "After scan" << std::endl;
   
   analysedCluster.resize(scan->getClusterCount());
   
