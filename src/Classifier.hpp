@@ -7,19 +7,30 @@
 #include <list>
 
 
+
 namespace sonar_image_feature_extractor
 {
   
   class Classifier{
    private:
-
-     
+      SVMConfig config;
+      svm_parameter param;
+      svm_model *model;
+    
+      std::vector<svm_node> getNodes( Cluster &c);
      
    public:
      
-     bool classify(Cluster c, SVMConfig config);
+     Classifier();
+     ~Classifier();
      
-     bool learn( std::vector<Cluster> positives, std::vector<Cluster> negatives, SVMConfig config);
+     void init(SVMConfig config);
+     
+     bool classify(Cluster &c);
+     
+     bool learn( std::vector<Cluster> &positives, std::vector<Cluster> &negatives);
+     
+     
      
    };
   

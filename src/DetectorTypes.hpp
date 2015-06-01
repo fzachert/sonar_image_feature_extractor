@@ -6,6 +6,8 @@
 #include <base/Time.hpp>
 #include <base/samples/Pointcloud.hpp>
 #include <vector>
+#include <math.h>
+#include "libsvm/svm.h"
 
 namespace sonar_image_feature_extractor
 {
@@ -71,13 +73,17 @@ namespace sonar_image_feature_extractor
     struct Cluster{
    
     Cluster() : number_of_points(0), minX(std::numeric_limits<double>::max()), minY(std::numeric_limits<double>::max()),
-	maxX(-std::numeric_limits<double>::max()), maxY(-std::numeric_limits<double>::max()) {}
+	maxX(-std::numeric_limits<double>::max()), maxY(-std::numeric_limits<double>::max()),
+	min_range(std::numeric_limits<double>::max()), max_range(0.0), min_angle(M_PI), max_angle(M_PI)   {}
     
     int number_of_points;
     double minX, minY, maxX, maxY;
+    double min_range, max_range, min_angle, max_angle;
     
     double variance;
     double contrast;
+    double range_size;
+    double angle_size;
     
   };   
    
@@ -131,7 +137,24 @@ namespace sonar_image_feature_extractor
   }; 
   
   struct SVMConfig{
-    std::string config_file;
+    std::string svm_path;
+    
+    SVMType svm_type;
+    KERNEL_TYPE kernel_type;
+    int kernel_degree;
+    double rbf_gamma;
+    double coef0;
+    
+    //LEarning parameters    
+    double cache_size;
+    double stopping_eps;
+    double C;
+    std::vector<double> weights;
+    std::vector<int> weight_labels;
+    int use_shrinking;
+    int use_probability;
+    
+    bool learn;
     
   };
   
