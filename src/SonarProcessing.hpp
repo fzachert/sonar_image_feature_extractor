@@ -2,6 +2,7 @@
 #define _SONARIMAGEFEATURE_SONARPROCESSING_HPP_
 
 #include "DetectorTypes.hpp"
+#include "ClassificationTypes.hpp"
 #include "Classifier.hpp"
 #include <vector>
 #include <list>
@@ -30,10 +31,12 @@ namespace sonar_image_feature_extractor
       * @param mat: binary image
       *	@param config: reference to the detector-configuration
       * @return: vector of sonar-features 
-      */
-     std::vector<Cluster> cluster(std::vector<SonarPeak> &peaks, const DetectorConfig &config, base::samples::SonarScan &scan);
+      */  
+     std::vector<Cluster> cluster(std::vector<SonarPeak> &peaks, const DetectorConfig &config, base::samples::SonarScan &sonar_scan, base::samples::SonarScan &debug_scan);
      
-     std::vector<SonarPeak> process(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config, DebugData &dd);
+     std::vector<SonarPeak> process(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config, DebugData &dd, cv::Mat &threshold_mat);
+     
+     void process_points(std::vector<Cluster> &analysedCluster, base::samples::SonarScan &sonar_scan, cv::Mat threshold_mat, const DetectorConfig &config);
      
    public:
      
@@ -50,6 +53,8 @@ namespace sonar_image_feature_extractor
       * @return: Vector of sonar-features
       */
      SonarFeatures detect(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config, DebugData &dd);
+     
+     LabeledCluster label_cluster(base::samples::SonarScan &input, DetectorConfig &config, DebugData &dd, Label label);
      
      void learn(base::samples::SonarScan &input, const DetectorConfig &config);
      

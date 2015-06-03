@@ -2,6 +2,7 @@
 #define _SONARIMAGEFEATURE_CLASSIFIER_HPP_
 
 #include "DetectorTypes.hpp"
+#include "ClassificationTypes.hpp"
 #include "libsvm/svm.h"
 #include <vector>
 #include <list>
@@ -28,7 +29,7 @@ namespace sonar_image_feature_extractor
      
      bool classify(Cluster &c);
      
-     bool learn( std::vector<Cluster> &positives, std::vector<Cluster> &negatives);
+     bool learn( std::vector<Cluster> &clusters, std::vector<Label> &labels);
      
      
      

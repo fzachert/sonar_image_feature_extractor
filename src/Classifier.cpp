@@ -57,24 +57,23 @@ bool Classifier::classify(Cluster &c){
   return false;
 }
 
-bool Classifier::learn( std::vector<Cluster> &positives, std::vector<Cluster> &negatives){
+bool Classifier::learn( std::vector<Cluster> &clusters, std::vector<Label> &labels){
   
   svm_problem prob;
-  prob.l = positives.size() + negatives.size();
+  prob.l = clusters.size();
   
   std::vector<double> results;
-  results.resize(prob.l);
-  results.insert( results.begin(), positives.size(), 1.0);
-  results.insert( results.end(), negatives.size(), -1.0);
+  
+  for(std::vector<Label>::iterator it = labels.begin(); it != labels.end(); it++){
+    results.push_back(it->label_id);    
+  }
+  
   
   std::vector<std::vector<svm_node> >  all_nodes;
   
-  for(std::vector<Cluster>::iterator it = positives.begin(); it != positives.end(); it++){
+  for(std::vector<Cluster>::iterator it = clusters.begin(); it != clusters.end(); it++){
     all_nodes.push_back(  getNodes(*it) );
-  }
-  for(std::vector<Cluster>::iterator it = negatives.begin(); it != negatives.end(); it++){
-    all_nodes.push_back(  getNodes(*it) );
-  }  
+  } 
   
   svm_node **data = new svm_node*[all_nodes.size()];
   
