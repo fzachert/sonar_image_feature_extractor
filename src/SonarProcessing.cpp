@@ -13,9 +13,9 @@ void SonarProcessing::init(){
 }
 
 
-LabeledCluster SonarProcessing::label_cluster(base::samples::SonarScan &input, DetectorConfig &config, DebugData &dd, Label label)
+std::vector<LabeledCluster> SonarProcessing::label_cluster(base::samples::SonarScan &input, DetectorConfig &config, DebugData &dd, Label label)
 {
-  
+  std::vector<LabeledCluster> result;
   LabeledCluster lc;
   lc.label = label;
   
@@ -35,20 +35,27 @@ LabeledCluster SonarProcessing::label_cluster(base::samples::SonarScan &input, D
   
   for(std::vector<Cluster>::iterator it = clusters.begin(); it != clusters.end(); it++)
   {
-    double dist =  (it->middle - label.pos).norm();
-  
-    if( dist < min_dist){
+    
+    if(label.label_id > 0.0){
+      double dist =  (it->middle - label.pos).norm();
+    
+      if( dist < min_dist){
+	lc.cluster = *it;
+	min_dist = dist;
+      }
+      
+    }else{
       lc.cluster = *it;
-      min_dist = dist;
+      result.push_back(lc);
     }
     
   }
   
-  if(min_dist == std::numeric_limits<double>::max()){
-   lc.label.label_id = 0; 
+  if(clusters.size() > 0 && label.label_id > 0.0){
+    result.push_back(lc);
   }
   
-  return lc;
+  return result;
 } 
 
 

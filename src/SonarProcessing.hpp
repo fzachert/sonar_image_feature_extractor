@@ -54,7 +54,7 @@ namespace sonar_image_feature_extractor
       */
      SonarFeatures detect(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config, DebugData &dd);
      
-     LabeledCluster label_cluster(base::samples::SonarScan &input, DetectorConfig &config, DebugData &dd, Label label);
+     std::vector<LabeledCluster> label_cluster(base::samples::SonarScan &input, DetectorConfig &config, DebugData &dd, Label label);
      
      void learn(base::samples::SonarScan &input, const DetectorConfig &config);
      
