@@ -13,6 +13,12 @@
 namespace sonar_image_feature_extractor
 {
  
+  struct ScaleFactor{
+    
+    double offset;
+    double scalling;    
+  };  
+  
   
   struct SVMConfig{
     std::string svm_path;
@@ -27,6 +33,7 @@ namespace sonar_image_feature_extractor
     double cache_size;
     double stopping_eps;
     double C;
+    double nu;
     std::vector<double> weights;
     std::vector<int> weight_labels;
     int use_shrinking;
@@ -34,6 +41,15 @@ namespace sonar_image_feature_extractor
     
     bool learn;
     
+    bool cross_validation;
+    int number_of_folds;
+    int start_gamma_exp;
+    int end_gamma_exp;
+    int start_C_exp;
+    int end_C_exp;
+    
+    std::vector<ScaleFactor> scales;
+   
   };
   
   

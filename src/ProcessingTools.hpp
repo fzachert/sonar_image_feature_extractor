@@ -83,6 +83,9 @@ namespace sonar_image_feature_extractor
       
   }
   
+  double getRadGemini( int beam_index){
+    return -std::asin(((2.0 * (beam_index + 1.0) - 256.0) / 256.0) * 0.86602540);
+  }  
   
 }
 

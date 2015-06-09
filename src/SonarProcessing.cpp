@@ -135,8 +135,16 @@ std::vector<SonarPeak> SonarProcessing::process(base::samples::SonarScan &input,
   for(std::vector<cv::Point2i>::iterator it = locations.begin(); it != locations.end(); it++){
     
     SonarPeak peak;
-    peak.angle = ((input.angular_resolution * it->y) - input.start_bearing ).rad;
-    peak.range = range_scale * it->x;
+    
+    if(config.gemini)
+      peak.angle = getRadGemini(it->y);
+    else    
+      peak.angle = ((input.angular_resolution * it->y) - input.start_bearing ).rad;
+    
+    peak.range = range_scale * it->x;  
+    
+    peak.range_id = it->x;
+    peak.angle_id = it->y;
     peak.pos.x() = cos(peak.angle) * peak.range;
     peak.pos.y() = sin(peak.angle) * peak.range;
     
@@ -219,10 +227,19 @@ std::vector<Cluster> SonarProcessing::cluster(std::vector<SonarPeak> &peaks, con
       if( p.angle > analysedCluster[id].max_angle)
 	analysedCluster[id].max_angle = p.angle;
       
+      if( p.range_id < analysedCluster[id].min_range_id)
+	analysedCluster[id].min_range_id = p.range_id;
+      if( p.range_id > analysedCluster[id].max_range_id)
+	analysedCluster[id].max_range_id = p.range_id;
+      if( p.angle_id < analysedCluster[id].min_angle_id)
+	analysedCluster[id].min_angle_id = p.angle_id;
+      if( p.angle_id > analysedCluster[id].max_angle_id)
+	analysedCluster[id].max_angle_id = p.angle_id;      
+      
+	analysedCluster[id].sum_pos += p.pos;
+      
       if(config.debug_mode == FEATURES){
-	int angle_index =  sonar_scan.number_of_beams - abs(int((p.angle-sonar_scan.start_bearing.rad)/sonar_scan.angular_resolution.rad));
-	int range_index = p.range / range_scale;
-	debug_mat.at<uint8_t>(angle_index, range_index) = (id +1) * color_step;
+	debug_mat.at<uint8_t>(p.angle_id, p.range_id) = (id +1) * color_step;
 	//std::cout << "Angle idx: " << angle_index << " Range idx: " << range_index << std::endl;
       }
       
@@ -241,9 +258,10 @@ std::vector<Cluster> SonarProcessing::cluster(std::vector<SonarPeak> &peaks, con
 
       it->middle.x() = (it->maxX + it->minX) * 0.5;
       it->middle.y() = (it->maxY + it->minY) * 0.5;
-      it->angle_size = (it->max_angle + it->min_angle) * 0.5;
-      it->range_size = (it->max_range + it->min_range) * 0.5;
-    
+      it->angle_size = (it->max_angle - it->min_angle);
+      it->range_size = (it->max_range - it->min_range);
+      
+      it->avg_pos = it->sum_pos * (1.0 / it->number_of_points);
       
       it++;
     }
@@ -263,10 +281,6 @@ void SonarProcessing::process_points(std::vector<Cluster> &analysedCluster, base
   
   double temp_sum = 0.0;
   int temp_points = 0;
-
-  
-  double range_res = config.sonar_max_range / sonar_scan.number_of_bins;
-  double angle_res = std::fabs(sonar_scan.angular_resolution.rad); 
   
   //Calculate avg-singnal in the cluster-areas  
   for(std::vector<Cluster>::iterator it = analysedCluster.begin(); it != analysedCluster.end(); it++){
@@ -274,28 +288,27 @@ void SonarProcessing::process_points(std::vector<Cluster> &analysedCluster, base
     double sum = 0.0;
     int num_points = 0;
     
-    for(double angle = it->min_angle; angle <= it->max_angle; angle += angle_res){
+    for(int angle = it->min_angle_id; angle <= it->max_angle_id; angle++){
       
       temp_sum = 0.0;
       temp_points = 0;
       
-      for(double range = it->min_range; range <= it->max_range; range += range_res){
-	int angle_index = sonar_scan.number_of_beams - abs(int((angle-sonar_scan.start_bearing.rad)/sonar_scan.angular_resolution.rad));
-	int range_index = range / range_res;
+      for(int range = it->min_range_id; range <= it->max_range_id; range++){
+
 	
 // 	std::cout << "angle_id: " << angle_index << " range_id: " << range_index << std::endl;
 // 	std::cout << "angle: " << angle << " range: " << range << std::endl;
 // 	std::cout << "min_angle: " << it->min_angle << " max_angle: " << it->max_angle << std::endl;
 	
-	if(threshold_mat.at<uint8_t>(angle_index, range_index) > 0){
+	if(threshold_mat.at<uint8_t>(angle, range) > 0){
 
-	  sum += temp_sum + sonar_mat.at<uint8_t>(angle_index, range_index);
+	  sum += temp_sum + sonar_mat.at<uint8_t>(angle, range);
 	  num_points += temp_points + 1;
 	  temp_sum = 0.0;
 	  temp_points = 0;
 	  
 	}else{
-	  temp_sum += sonar_mat.at<uint8_t>(angle_index, range_index);
+	  temp_sum += sonar_mat.at<uint8_t>(angle, range);
 	  temp_points++;
 	}
       
@@ -324,24 +337,23 @@ void SonarProcessing::process_points(std::vector<Cluster> &analysedCluster, base
     
     double avg = it->avg_signal;
     
-    for(double angle = it->min_angle; angle <= it->max_angle; angle += angle_res){
+    for(int angle = it->min_angle_id; angle <= it->max_angle_id; angle++){
       
       temp_sum = 0.0;
       temp_points = 0;
       
-      for(double range = it->min_range; range <= it->max_range; range += range_res){
-	int angle_index =  sonar_scan.number_of_beams - abs(int((angle-sonar_scan.start_bearing.rad)/sonar_scan.angular_resolution.rad));
-	int range_index = range / range_res;
+      for(int range = it->min_range_id; range <= it->max_range_id; range++){
+
 	
-	if(threshold_mat.at<uint8_t>(angle_index, range_index) > 0){
+	if(threshold_mat.at<uint8_t>(angle, range) > 0){
 	  
-	  sum += temp_sum + std::pow(sonar_mat.at<uint8_t>(angle_index, range_index) - avg  , 2.0 );
+	  sum += temp_sum + std::pow(sonar_mat.at<uint8_t>(angle, range) - avg  , 2.0 );
 	  num_points += temp_points + 1;
 	  temp_sum = 0.0;
 	  temp_points = 0;
 	  
 	}else{
-	  temp_sum += std::pow(sonar_mat.at<uint8_t>(angle_index, range_index) - avg, 2.0)  ;
+	  temp_sum += std::pow(sonar_mat.at<uint8_t>(angle, range) - avg, 2.0)  ;
 	  temp_points++;
 	}
       
@@ -349,11 +361,13 @@ void SonarProcessing::process_points(std::vector<Cluster> &analysedCluster, base
     
     } 
     
-    if(num_points > 0)
+    if(num_points > 0){
       it->variance = sum / num_points;
-    else
+      it->variation_coefficient = std::sqrt( it->variance) / 127.5; 
+    }else{
       it->variance = 0;
-    
+      it->variation_coefficient = 0;
+    }
   }  
   
   
@@ -364,25 +378,21 @@ void SonarProcessing::process_points(std::vector<Cluster> &analysedCluster, base
     double sum = 0.0;
     int num_points = 0;
     
-    for(double angle = it->min_angle; angle <= it->max_angle; angle += angle_res){
+    for(int angle = it->min_angle_id; angle <= it->max_angle_id; angle++){
       
-      for(double range = it->min_range - 10; range <= it->min_range; range += range_res){
-	int angle_index =  sonar_scan.number_of_beams - abs(int((angle-sonar_scan.start_bearing.rad)/sonar_scan.angular_resolution.rad));
-	int range_index = range / range_res;
+      for(int range = it->min_range_id - 10; range <= it->min_range_id; range++){
 	
-	if(range_index > 0){
-	  sum += sonar_mat.at<uint8_t>(angle_index, range_index);
+	if(range > 0){
+	  sum += sonar_mat.at<uint8_t>(angle, range);
 	  num_points++;	  
 	}
       
       }
       
-      for(double range = it->max_range; range <= it->max_range + 10; range += range_res){
-	int angle_index =  sonar_scan.number_of_beams - abs(int((angle-sonar_scan.start_bearing.rad)/sonar_scan.angular_resolution.rad));
-	int range_index = range / range_res;
+      for(int range = it->max_range_id; range <= it->max_range_id + 10; range++){
 	
-	if(range_index < sonar_scan.number_of_bins){
-	  sum += sonar_mat.at<uint8_t>(angle_index, range_index);
+	if(range < sonar_scan.number_of_bins){
+	  sum += sonar_mat.at<uint8_t>(angle, range);
 	  num_points++;	  
 	}
       

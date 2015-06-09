@@ -46,6 +46,8 @@ namespace sonar_image_feature_extractor
   struct SonarPeak{
     
     base::Vector2d pos;
+    int range_id;
+    int angle_id;
     double range;
     double angle;
     
@@ -74,18 +76,25 @@ namespace sonar_image_feature_extractor
    
     Cluster() : number_of_points(0), minX(std::numeric_limits<double>::max()), minY(std::numeric_limits<double>::max()),
 	maxX(-std::numeric_limits<double>::max()), maxY(-std::numeric_limits<double>::max()),
-	min_range(std::numeric_limits<double>::max()), max_range(0.0), min_angle(M_PI), max_angle(-M_PI)   {}
+	min_range(std::numeric_limits<double>::max()), max_range(0.0), min_angle(M_PI), max_angle(-M_PI),
+	min_angle_id(255), max_angle_id(0), min_range_id(std::numeric_limits<int>::max()), max_range_id(0),
+	sum_pos(base::Vector2d::Zero()) {}
     
     int number_of_points;
     double minX, minY, maxX, maxY;
     double min_range, max_range, min_angle, max_angle;
+    int min_angle_id, max_angle_id, min_range_id, max_range_id;
     
-    base::Vector2d middle;
+    base::Vector2d sum_pos;
+    base::Vector2d middle;    
+    base::Vector2d avg_pos;
     
     double variance;
     double contrast;
     double range_size;
     double angle_size;
+    
+    double variation_coefficient;    
     
     double avg_signal;
     
@@ -137,6 +146,8 @@ namespace sonar_image_feature_extractor
     double sonar_max_range; //meter
     double sonar_opening_angle; //radian
     double ignore_min_range; //meter
+    
+    bool gemini;
    
   }; 
 

@@ -19,6 +19,7 @@ namespace sonar_image_feature_extractor
       svm_model *model;
     
       std::vector<svm_node> getNodes( Cluster &c);
+    
      
    public:
      
@@ -29,9 +30,21 @@ namespace sonar_image_feature_extractor
      
      bool classify(Cluster &c);
      
-     bool learn( std::vector<Cluster> &clusters, std::vector<Label> &labels);
+     SVMConfig learn( std::vector<Cluster> &clusters, std::vector<Label> &labels);
      
+     void cross_validate_params(svm_problem &prob);
      
+     void validate_model(svm_problem &prob);
+     
+     void validate_model( std::vector<Cluster> &clusters, std::vector<Label> &labels);
+     
+     void calculateScalling( std::vector<std::vector<svm_node> >  &nodes );
+     
+     void scale(std::vector< svm_node> &nodes);
+     
+     void scaleAllNodes( std::vector< std::vector< svm_node> > &nodes);
+     
+     static void print_null(const char *s) {};
      
    };
   
