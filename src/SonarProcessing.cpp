@@ -8,8 +8,11 @@ static double angular_resolution = 0.5;
 static double range_resolution = 0.008;
 static double sin_angular_resolution = 0.00872653549;
 
-void SonarProcessing::init(){
+void SonarProcessing::init( const SVMConfig &svm_conf){
   
+  this->svm_conf = svm_conf;
+  
+  classifier.init( svm_conf);  
 }
 
 
@@ -27,7 +30,8 @@ std::vector<LabeledCluster> SonarProcessing::label_cluster(base::samples::SonarS
     
   std::vector<Cluster> clusters = cluster(peaks, config, input, input);
   
-  process_points(clusters, input, threshold_mat, config);
+  process_points(clusters, input, threshold_mat);
+  calculate_moments(clusters, input, threshold_mat);
   
   dd.cluster = clusters;
   
@@ -63,27 +67,47 @@ SonarFeatures SonarProcessing::detect(base::samples::SonarScan &input, base::sam
 {
   
   SonarFeatures result;
+  result.time = input.time;
   cv::Mat threshold_mat;
   
-  std::vector<SonarPeak> peaks = process(input, debug, config, dd, threshold_mat);
   
+  std::cout << "Start processing" << std::endl;
+  base::Time start = base::Time::now();
+  std::vector<SonarPeak> peaks = process(input, debug, config, dd, threshold_mat);
+  std::cout << "Processing time: " << base::Time::now().toSeconds() - start.toSeconds() << std::endl;
   
   std::cout << "Start clustering with " << peaks.size() << " peaks." << std::endl;
-  base::Time start = base::Time::now();
-  
+  start = base::Time::now();  
   std::vector<Cluster> clusters = cluster(peaks, config, input, debug);
   std::cout << "Clustering time: " << base::Time::now().toSeconds() - start.toSeconds() << std::endl;
   
-  process_points(clusters, input, threshold_mat, config);
+  process_points(clusters, input, threshold_mat);
+  calculate_moments(clusters, input, threshold_mat);
   
   dd.cluster = clusters;
   
   for(std::vector<Cluster>::iterator it = clusters.begin(); it != clusters.end(); it++)
   {
     
-//     if(classifier.classify(*it, config)){
-//       //TODO ad feature to result
-//     }
+    //std::cout << "Start classification" << std::endl;
+    start = base::Time::now();
+    int label = classifier.classify(*it);
+    //std::cout << "Classification time: " << base::Time::now().toSeconds() - start.toSeconds() << std::endl;  
+    
+    
+    if( label != 0){
+      
+      Feature f;
+      f.confidence = 1;
+      f.position.x() = cos( (it->min_angle + it->max_angle) * 0.5 ) * it->min_range;
+      f.position.y() = sin( (it->min_angle + it->max_angle) * 0.5 ) * it->min_range;
+      f.size.x() = it->maxX - it->minX;
+      f.size.y() = it->maxY - it->minY;
+      
+      f.desc.label = label;      
+      
+      result.features.push_back(f);
+    }  
     
   }
   
@@ -271,149 +295,6 @@ std::vector<Cluster> SonarProcessing::cluster(std::vector<SonarPeak> &peaks, con
   return analysedCluster;  
 }
 
-
-void SonarProcessing::process_points(std::vector<Cluster> &analysedCluster, base::samples::SonarScan &sonar_scan, cv::Mat threshold_mat, const DetectorConfig &config){
-  
-  //std::cout << "Threshold_mat " << threshold_mat.size().width << " " << threshold_mat.size().height << std::endl; 
-  
-  
-  cv::Mat sonar_mat = cv::Mat(sonar_scan.number_of_beams, sonar_scan.number_of_bins, CV_8U, (void*) sonar_scan.data.data());
-  
-  double temp_sum = 0.0;
-  int temp_points = 0;
-  
-  //Calculate avg-singnal in the cluster-areas  
-  for(std::vector<Cluster>::iterator it = analysedCluster.begin(); it != analysedCluster.end(); it++){
-    
-    double sum = 0.0;
-    int num_points = 0;
-    
-    for(int angle = it->min_angle_id; angle <= it->max_angle_id; angle++){
-      
-      temp_sum = 0.0;
-      temp_points = 0;
-      
-      for(int range = it->min_range_id; range <= it->max_range_id; range++){
-
-	
-// 	std::cout << "angle_id: " << angle_index << " range_id: " << range_index << std::endl;
-// 	std::cout << "angle: " << angle << " range: " << range << std::endl;
-// 	std::cout << "min_angle: " << it->min_angle << " max_angle: " << it->max_angle << std::endl;
-	
-	if(threshold_mat.at<uint8_t>(angle, range) > 0){
-
-	  sum += temp_sum + sonar_mat.at<uint8_t>(angle, range);
-	  num_points += temp_points + 1;
-	  temp_sum = 0.0;
-	  temp_points = 0;
-	  
-	}else{
-	  temp_sum += sonar_mat.at<uint8_t>(angle, range);
-	  temp_points++;
-	}
-      
-      }
-    
-    } 
-    
-    if(num_points > 0)
-      it->avg_signal= sum / num_points;    
-    else
-      it->avg_signal= 0;
-    
-  }
-  
-  
-  //Calculate variance in cluster-areas
-  temp_sum = 0.0;
-  temp_points = 0;
-
-  
-  //Calculate avg-singnal in the cluster-areas  
-  for(std::vector<Cluster>::iterator it = analysedCluster.begin(); it != analysedCluster.end(); it++){
-    
-    double sum = 0.0;
-    int num_points = 0;
-    
-    double avg = it->avg_signal;
-    
-    for(int angle = it->min_angle_id; angle <= it->max_angle_id; angle++){
-      
-      temp_sum = 0.0;
-      temp_points = 0;
-      
-      for(int range = it->min_range_id; range <= it->max_range_id; range++){
-
-	
-	if(threshold_mat.at<uint8_t>(angle, range) > 0){
-	  
-	  sum += temp_sum + std::pow(sonar_mat.at<uint8_t>(angle, range) - avg  , 2.0 );
-	  num_points += temp_points + 1;
-	  temp_sum = 0.0;
-	  temp_points = 0;
-	  
-	}else{
-	  temp_sum += std::pow(sonar_mat.at<uint8_t>(angle, range) - avg, 2.0)  ;
-	  temp_points++;
-	}
-      
-      }
-    
-    } 
-    
-    if(num_points > 0){
-      it->variance = sum / num_points;
-      it->variation_coefficient = std::sqrt( it->variance) / 127.5; 
-    }else{
-      it->variance = 0;
-      it->variation_coefficient = 0;
-    }
-  }  
-  
-  
-  
-    //Calculate contrast
-    for(std::vector<Cluster>::iterator it = analysedCluster.begin(); it != analysedCluster.end(); it++){
-    
-    double sum = 0.0;
-    int num_points = 0;
-    
-    for(int angle = it->min_angle_id; angle <= it->max_angle_id; angle++){
-      
-      for(int range = it->min_range_id - 10; range <= it->min_range_id; range++){
-	
-	if(range > 0){
-	  sum += sonar_mat.at<uint8_t>(angle, range);
-	  num_points++;	  
-	}
-      
-      }
-      
-      for(int range = it->max_range_id; range <= it->max_range_id + 10; range++){
-	
-	if(range < sonar_scan.number_of_bins){
-	  sum += sonar_mat.at<uint8_t>(angle, range);
-	  num_points++;	  
-	}
-      
-      }      
-      
-    
-    } 
-    
-    double avg_env = sum / num_points;
-    
-    if(avg_env > 0)
-      it->contrast = it->avg_signal / avg_env;
-    else
-      it->contrast = 0;
-    
-    
-  } 
-  
-  
-  
-}
 
 double SonarProcessing::mahalanobis_distance(SonarPeak *p1, SonarPeak *p2)
 {

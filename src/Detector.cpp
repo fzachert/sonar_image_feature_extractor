@@ -226,9 +226,7 @@ SonarFeatures Detector::cluster(cv::Mat mat, const DetectorConfig &config){
     }
     
   }
-  
-  feat.number_of_features = feat.features.size();
-  feat.number_of_points = dataPointers.size();
+
   
   return feat;
 }

@@ -25,6 +25,7 @@ namespace sonar_image_feature_extractor
    private:
      
      Classifier classifier;
+     SVMConfig svm_conf;
      
      /**
       * This function applies clustering to the preprocessed sonar-image
@@ -36,14 +37,12 @@ namespace sonar_image_feature_extractor
      
      std::vector<SonarPeak> process(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config, DebugData &dd, cv::Mat &threshold_mat);
      
-     void process_points(std::vector<Cluster> &analysedCluster, base::samples::SonarScan &sonar_scan, cv::Mat threshold_mat, const DetectorConfig &config);
-     
    public:
      
      /**
       * Initialise the detector: reset the filter
       */
-     void init();
+     void init( const SVMConfig &svm_conf);
      
      /**
       * Detect sonar-features in a sonar-image

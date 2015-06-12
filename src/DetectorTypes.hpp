@@ -13,13 +13,14 @@ namespace sonar_image_feature_extractor
 {
   struct Destricptor{
     base::Vector3d dummy; //TODO
+    int label;
     
   };
   
    struct Feature{
      double confidence;
-     base::Vector3d position;
-     base::Vector3d size;
+     base::Vector2d position;
+     base::Vector2d size;
      Destricptor desc;
      
    };
@@ -38,8 +39,6 @@ namespace sonar_image_feature_extractor
      base::Time time;
      SonarConfig conf;
      
-     int number_of_features;
-     int number_of_points;
      std::vector<Feature> features;
    };
    
@@ -67,6 +66,66 @@ namespace sonar_image_feature_extractor
     
   };   
    
+  struct Moment2D{
+    
+    int orderX, orderY;
+    double value;
+  
+    Moment2D(){
+      orderX = 0;
+      orderY = 0;
+      value = NAN;
+    }
+    
+    Moment2D(int x, int y,double value){
+      this->orderX = x;
+      this->orderY = y;
+      this->value = value;
+    }
+  };
+  
+  
+  struct Moments{    
+    base::Vector2d center_of_mass;  
+    std::vector<Moment2D> moments;
+    
+    
+    /**
+     * Getter-Method for a moment with given orders
+     * If moments is unknown, return is NAN
+     */
+    double getMoment( int orderX, int orderY){
+      
+      for(std::vector<Moment2D>::iterator it = moments.begin(); it != moments.end(); it++){
+	
+	if( it->orderX == orderX && it->orderY == orderY)
+	  return it->value;
+	
+      }
+      
+      
+      return NAN;
+    }
+    
+    /**
+     * Setter-Method for a moment
+     */
+    void setMoment( int orderX, int orderY, double value){
+      
+      for(std::vector<Moment2D>::iterator it = moments.begin(); it != moments.end(); it++){
+	
+	if( it->orderX == orderX && it->orderY == orderY){
+	  it->value = value;
+	  return;
+	}
+	
+      }      
+      moments.push_back( Moment2D( orderX, orderY, value) );      
+    }
+    
+    
+  };
+  
    
   /**
    * This class represents one 2d-cluster
@@ -97,6 +156,8 @@ namespace sonar_image_feature_extractor
     double variation_coefficient;    
     
     double avg_signal;
+    
+    Moments moments;
     
   };   
    

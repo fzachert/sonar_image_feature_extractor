@@ -40,21 +40,20 @@ void Classifier::init(SVMConfig config){
 }
 
 
-bool Classifier::classify(Cluster &c){
+int Classifier::classify(Cluster &c){
   
   if(model){
   
     std::vector<svm_node> nodes = getNodes(c);
-     
+    scale(nodes);
+    
     double prediction = svm_predict(model, nodes.data());
     
-    if(prediction > 0)
-      return true;   
+    return (int) round(prediction);  
   
   } 
-  
  
-  return false;
+  return 0;
 }
 
 SVMConfig Classifier::learn( std::vector<Cluster> &clusters, std::vector<Label> &labels){

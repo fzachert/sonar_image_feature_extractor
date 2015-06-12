@@ -28,7 +28,7 @@ namespace sonar_image_feature_extractor
      
      void init(SVMConfig config);
      
-     bool classify(Cluster &c);
+     int classify(Cluster &c);
      
      SVMConfig learn( std::vector<Cluster> &clusters, std::vector<Label> &labels);
      
