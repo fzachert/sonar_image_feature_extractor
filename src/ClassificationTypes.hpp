@@ -41,12 +41,14 @@ namespace sonar_image_feature_extractor
     
     bool learn;
     
+    bool use_moments;
     bool cross_validation;
     int number_of_folds;
     int start_gamma_exp;
     int end_gamma_exp;
     int start_C_exp;
     int end_C_exp;
+    
     
     std::vector<ScaleFactor> scales;
    
