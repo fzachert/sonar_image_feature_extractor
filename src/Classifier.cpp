@@ -102,6 +102,8 @@ SVMConfig Classifier::learn( std::vector<Cluster> &clusters, std::vector<Label> 
     
     validate_model(clusters, labels);
     
+    cross_validate_result( prob);
+    
     if(svm_save_model( config.svm_path.c_str() , model) == -1)
       std::cout  << "Could not save svm" << std::endl;
     
@@ -161,7 +163,8 @@ void Classifier::validate_model( std::vector<Cluster> &clusters, std::vector<Lab
   int error_count = 0;
   std::vector<svm_node> nodes;
   
-  std::vector<int> false_labels, true_labels;  
+  std::vector<int> false_labels, true_labels; 
+  std::vector< std::vector<int> > predictions(3, std::vector<int>(3, 0)) ;
   
   for( int i = 0; i < clusters.size(); i++){
     
@@ -174,8 +177,16 @@ void Classifier::validate_model( std::vector<Cluster> &clusters, std::vector<Lab
     if( labels[i].label_id >= true_labels.size() ){
       true_labels.resize( labels[i].label_id, 0);
       false_labels.resize( labels[i].label_id, 0);
+      
+      predictions.resize( labels[i].label_id, std::vector<int>( labels[i].label_id, 0)  );
     }
     
+    if( prediction >= predictions[ labels[i].label_id -1].size() ){
+      
+      predictions[ labels[i].label_id - 1].resize( prediction, 0);
+    }
+    
+    predictions[ labels[i].label_id -1][ prediction -1]++;
     
     if(  std::fabs(prediction - labels[i].label_id) > 0.1 ){
       error_count++;
@@ -199,9 +210,72 @@ void Classifier::validate_model( std::vector<Cluster> &clusters, std::vector<Lab
   }
   
   std::cout << "----------------------------------------------------" << std::endl;
+  std::cout << "Confusion matrix of learning-error" << std::endl;
+  
+  std::cout << "     ";
+  for(int i = 0 ; i < predictions.size(); i++){
+    std::cout << "| " << i +1 << "   " ;
+  }
+  std::cout << std::endl;
+  
+  for(int i = 0; i < predictions.size(); i++){
+    std::cout << i + 1 << "   " ; 
+    for(int j = 0; j < predictions[i].size(); j++){
+        std::cout << " " << predictions[i][j] << "  ";   
+    }
+    std::cout << std::endl;
+  }
   
 } 
 
+
+void Classifier::cross_validate_result(svm_problem &prob){
+  
+    int total_error = 0;
+    double *target = new double[prob.l];	
+    std::vector< std::vector<int> > predictions(3, std::vector<int>(3, 0));
+    
+    svm_set_print_string_function( print_null) ;
+    svm_cross_validation(&prob, &param, config.number_of_folds, target );
+	
+    for(int i=0;i<prob.l;i++)
+    {
+
+      if( prob.y[i] >= predictions.size() ){
+	
+	predictions.resize( prob.y[i], std::vector<int>( prob.y[i], 0)  );
+      }
+      
+      if( target[i] >= predictions[ prob.y[i] -1].size() ){
+	
+	predictions[ prob.y[i] - 1].resize( target[i], 0);
+      }
+      
+      predictions[ prob.y[i] -1][ target[i] -1]++;      
+      
+	
+    }
+
+  std::cout << "----------------------------------------------------" << std::endl;
+  std::cout << "Confusion matrix of cross-validation" << std::endl;
+  
+  std::cout << "     ";
+  for(int i = 0 ; i < predictions.size(); i++){
+    std::cout << "| " << i +1 << "   " ;
+  }
+  std::cout << std::endl;
+  
+  for(int i = 0; i < predictions.size(); i++){
+    std::cout << i + 1 << "   " ; 
+    for(int j = 0; j < predictions[i].size(); j++){
+        std::cout << " " << predictions[i][j] << "  ";   
+    }
+    std::cout << std::endl;
+  }    
+    
+    
+ 
+}
 
 
 void Classifier::cross_validate_params(svm_problem &prob){
@@ -290,7 +364,7 @@ std::vector<svm_node> Classifier::getNodes( Cluster &c){
      
      if(config.use_moments){
 
-       for( int i = 0; i < c.moments.moments.size(); i++){
+       for( int i = 1; i < c.moments.moments.size(); i++){
 	 
 	 node.index = 6 + i;
 	 node.value = c.moments.moments[i].value;

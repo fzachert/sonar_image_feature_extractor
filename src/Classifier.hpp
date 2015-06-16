@@ -34,6 +34,8 @@ namespace sonar_image_feature_extractor
      
      void cross_validate_params(svm_problem &prob);
      
+     void cross_validate_result(svm_problem &prob);
+     
      void validate_model(svm_problem &prob);
      
      void validate_model( std::vector<Cluster> &clusters, std::vector<Label> &labels);

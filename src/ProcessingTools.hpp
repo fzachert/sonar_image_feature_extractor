@@ -308,6 +308,8 @@ void process_points(std::vector<Cluster> &analysedCluster, base::samples::SonarS
     for(int angle = it->min_angle_id; angle <= it->max_angle_id; angle++){
       
       temp_sums.insert( temp_sums.begin(), 20, 0.0 );
+      double angle_sin = std::sin( ( angle - centerY ) * sonar_scan.angular_resolution.rad );  
+      double angle_cos = std::cos( ( angle - centerY ) * sonar_scan.angular_resolution.rad );
       
       for(int range = it->min_range_id; range <= it->max_range_id; range++){
 
@@ -325,14 +327,15 @@ void process_points(std::vector<Cluster> &analysedCluster, base::samples::SonarS
 	      if( x + y >= 2 && x + y <= 4){
 		index = (x * 5) + y;
 		sums[ index] = temp_sums[ index ] 
-		+ ( std::pow(range - centerX, x) * std::pow( angle - centerY, y ) * value); 
+		+ ( std::pow(range - centerX, x) * std::pow( ((double)range) * angle_sin, y ) * value); 
 		
+		temp_sums[ index] = 0;
 	      }
 	      
 	    }
 	  }
 
-	  temp_sums.insert( temp_sums.begin(), 17, 0.0);
+	  temp_sums.insert( temp_sums.begin(), 20, 0.0);
 	  
 	}else{
 	  
@@ -341,7 +344,7 @@ void process_points(std::vector<Cluster> &analysedCluster, base::samples::SonarS
 	      
 	      if( x + y >= 2 && x + y <= 4){
 		index = (x * 5) + y;
-		temp_sums[ index] = ( std::pow(range - centerX, x) * std::pow( angle - centerY, y ) 
+		temp_sums[ index] = ( std::pow(range - centerX, x) * std::pow( ((double)range) * angle_sin , y ) 
 		* value); 
 		
 	      }
@@ -363,7 +366,7 @@ void process_points(std::vector<Cluster> &analysedCluster, base::samples::SonarS
 	  index = (x * 5) + y;
 	  
 	  value = sums[ index] 
-	    / std::pow( it->moments.getMoment(0,0), 1 + ((x+y)*0.2 ) )  ;
+	    / std::pow( it->moments.getMoment(0,0), 1 + ((x+y)*0.5 ) ) ;
 	  
 	  it->moments.setMoment(x, y, value);
 		
