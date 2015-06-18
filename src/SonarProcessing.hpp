@@ -1,3 +1,12 @@
+/* ----------------------------------------------------------------------------
+ * SonarProcessing.hpp
+ * written by Fabio Zachert, June 2015
+ * University of Bremen
+ * 
+ * This class provides a featue-detector on sonar-scans
+ * ----------------------------------------------------------------------------
+*/
+
 #ifndef _SONARIMAGEFEATURE_SONARPROCESSING_HPP_
 #define _SONARIMAGEFEATURE_SONARPROCESSING_HPP_
 
@@ -49,15 +58,16 @@ namespace sonar_image_feature_extractor
       * @param frame: sonar-image
       * @param debug_frame: empty frame for the debug-image
       * @param config: Configuration of the detector
+      * @param dd: empty debug-data struct. To be filed
       * @return: Vector of sonar-features
       */
      SonarFeatures detect(base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config, DebugData &dd);
      
      std::vector<LabeledCluster> label_cluster(base::samples::SonarScan &input, DetectorConfig &config, DebugData &dd, Label label);
      
-     void learn(base::samples::SonarScan &input, const DetectorConfig &config);
-     
-     
+     /**
+      * Distance functions, to be used by the clustering algorithm
+      */
      static double distance(SonarPeak *p1, SonarPeak *p2);
      static double mahalanobis_distance(SonarPeak *p1, SonarPeak *p2);
      

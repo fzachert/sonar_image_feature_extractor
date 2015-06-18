@@ -1,3 +1,12 @@
+/* ----------------------------------------------------------------------------
+ * ProcessingTools.cpp
+ * written by Fabio Zachert, June 2015
+ * University of Bremen
+ * 
+ * This file contains processing functions on sonar-scans
+ * ----------------------------------------------------------------------------
+*/
+
 #ifndef _SONARIMAGEFEATURE_TOOLS_HPP_
 #define _SONARIMAGEFEATURE_TOOLS_HPP_
 

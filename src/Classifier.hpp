@@ -1,3 +1,12 @@
+/* ----------------------------------------------------------------------------
+ * Classifier.hpp
+ * written by Fabio Zachert, June 2015
+ * University of Bremen
+ * 
+ * This class provides a svm-classifier of sonar-cluster
+ * ----------------------------------------------------------------------------
+*/
+
 #ifndef _SONARIMAGEFEATURE_CLASSIFIER_HPP_
 #define _SONARIMAGEFEATURE_CLASSIFIER_HPP_
 
@@ -19,19 +28,7 @@ namespace sonar_image_feature_extractor
       svm_model *model;
     
       std::vector<svm_node> getNodes( Cluster &c);
-    
-     
-   public:
-     
-     Classifier();
-     ~Classifier();
-     
-     void init(SVMConfig config);
-     
-     int classify(Cluster &c);
-     
-     SVMConfig learn( std::vector<Cluster> &clusters, std::vector<Label> &labels);
-     
+      
      void cross_validate_params(svm_problem &prob);
      
      void cross_validate_result(svm_problem &prob);
@@ -44,7 +41,36 @@ namespace sonar_image_feature_extractor
      
      void scale(std::vector< svm_node> &nodes);
      
-     void scaleAllNodes( std::vector< std::vector< svm_node> > &nodes);
+     void scaleAllNodes( std::vector< std::vector< svm_node> > &nodes);      
+    
+     
+   public:
+     
+     Classifier();
+     ~Classifier();
+     
+     /**
+      * Initialize the classifier with a configuration
+      */
+     void init(SVMConfig config);
+     
+     /**
+      * Classify a cluster, using a svm
+      * @param c: input-cluster
+      * @return: label of the input-cluster
+      */
+     int classify(Cluster &c);
+     
+     /**
+      * Train a svm. 
+      * After training, the svm is saved in the defined filepath of the config
+      * @param clusters: vector of training-cluster
+      * @param labels: vector of training-labels. size(cluster) == size(labels)
+      * @return configuration with learned svm-parameters and caluclated feature-scalling
+      */
+     SVMConfig learn( std::vector<Cluster> &clusters, std::vector<Label> &labels);
+     
+
      
      static void print_null(const char *s) {};
      

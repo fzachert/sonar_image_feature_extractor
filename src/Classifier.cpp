@@ -1,3 +1,12 @@
+/* ----------------------------------------------------------------------------
+ * Classifier.cpp
+ * written by Fabio Zachert, June 2015
+ * University of Bremen
+ * 
+ * This class provides a svm-classifier of sonar-cluster
+ * ----------------------------------------------------------------------------
+*/
+
 #include "Classifier.hpp"
 
 using namespace sonar_image_feature_extractor;

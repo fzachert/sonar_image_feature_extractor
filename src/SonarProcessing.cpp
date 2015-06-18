@@ -1,3 +1,13 @@
+/* ----------------------------------------------------------------------------
+ * SonarProcessing.cpp
+ * written by Fabio Zachert, June 2015
+ * University of Bremen
+ * 
+ * This class provides a featue-detector on sonar-scans
+ * ----------------------------------------------------------------------------
+*/
+
+
 #include "SonarProcessing.hpp"
 #include "ProcessingTools.hpp"
 

@@ -1,3 +1,15 @@
+/* ----------------------------------------------------------------------------
+ * Detector.hpp
+ * written by Fabio Zachert, June 2015
+ * University of Bremen
+ * 
+ * This provides a feature-detector in sonar-images using image-processing
+ * Not finished!!!
+ * Use Sonar-Processing.hpp insted for detection in sonarscans
+ * ----------------------------------------------------------------------------
+*/
+
+
 #ifndef _SONARIMAGEFEATURE_DETECTOR_HPP_
 #define _SONARIMAGEFEATURE_DETECTOR_HPP_
 

@@ -1,3 +1,12 @@
+/* ----------------------------------------------------------------------------
+ * DetectorTypes.hpp
+ * written by Fabio Zachert, June 2015
+ * University of Bremen
+ * 
+ * This file provides types, used inside the feature-detector
+ * ----------------------------------------------------------------------------
+*/
+
 #ifndef _SONARIMAGEFEATURE_TYPES_HPP_
 #define _SONARIMAGEFEATURE_TYPES_HPP_
 
@@ -11,12 +20,18 @@
 
 namespace sonar_image_feature_extractor
 {
+  /**
+   * Discibes a sonar-feature
+   */
   struct Destricptor{
     base::Vector3d dummy; //TODO
     int label;
     
   };
   
+  /*
+   * A single sonar-feature
+   */
    struct Feature{
      double confidence;
      base::Vector2d position;
@@ -25,6 +40,10 @@ namespace sonar_image_feature_extractor
      
    };
    
+
+   /**
+    * Configuration of the sonar
+    */
    struct SonarConfig{
      base::Orientation orientation;
      
@@ -34,7 +53,9 @@ namespace sonar_image_feature_extractor
      double minimumRange;
    }; 
    
-   
+   /**
+    * A list of sonar-features, as output of the detector
+    */   
    struct SonarFeatures{
      base::Time time;
      SonarConfig conf;
@@ -42,6 +63,9 @@ namespace sonar_image_feature_extractor
      std::vector<Feature> features;
    };
    
+   /**
+    * A single sonar-peak in the sonar-scan
+    */
   struct SonarPeak{
     
     base::Vector2d pos;
@@ -65,7 +89,10 @@ namespace sonar_image_feature_extractor
     
     
   };   
-   
+  
+  /**
+   * A geometric-moment as a descritor of a sonar-cluster
+   */
   struct Moment2D{
     
     int orderX, orderY;
@@ -84,7 +111,9 @@ namespace sonar_image_feature_extractor
     }
   };
   
-  
+  /**
+   * Gemetric moments of a single sonar-cluster
+   */
   struct Moments{    
     base::Vector2d center_of_mass;  
     std::vector<Moment2D> moments;
@@ -188,6 +217,7 @@ namespace sonar_image_feature_extractor
       MAHALANOBIS =1
     };
   
+  //Configuration of the sonar-processing  
   struct DetectorConfig{
     
     int blur;
@@ -216,7 +246,7 @@ namespace sonar_image_feature_extractor
   struct DebugData{
     std::vector<Cluster> cluster;
     double entropy;
-    base::samples::Pointcloud points;
+    base::samples::Pointcloud points; //Extracted peaks in cartesian-coordinates
     
   };
   

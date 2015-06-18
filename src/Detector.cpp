@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+ * Detector.cpp
+ * written by Fabio Zachert, June 2015
+ * University of Bremen
+ * 
+ * This provides a feature-detector in sonar-images using image-processing
+ * Not finished!!!
+ * Use Sonar-Processing.hpp insted for detection in sonarscans
+ * ----------------------------------------------------------------------------
+*/
+
 #include "Detector.hpp"
 #include <iostream>
 #include "frame_helper/FrameHelper.h"
