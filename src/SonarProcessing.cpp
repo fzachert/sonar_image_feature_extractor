@@ -113,6 +113,8 @@ SonarFeatures SonarProcessing::detect(base::samples::SonarScan &input, base::sam
       f.position.y() = sin( (it->min_angle + it->max_angle) * 0.5 ) * it->min_range;
       f.size.x() = it->maxX - it->minX;
       f.size.y() = it->maxY - it->minY;
+      f.range = it->min_range;
+      f.angle_h = (it->min_angle + it->max_angle) * 0.5;
       
       f.desc.label = label;      
       

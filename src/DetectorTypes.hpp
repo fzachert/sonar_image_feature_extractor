@@ -35,6 +35,8 @@ namespace sonar_image_feature_extractor
    struct Feature{
      double confidence;
      base::Vector2d position;
+     double range;
+     double angle_h;
      base::Vector2d size;
      Destricptor desc;
      
