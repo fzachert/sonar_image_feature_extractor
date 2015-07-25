@@ -373,7 +373,7 @@ std::vector<svm_node> Classifier::getNodes( Cluster &c){
      
      if(config.use_moments){
 
-       for( int i = 1; i < c.moments.moments.size(); i++){
+       for( int i = 0; i < c.moments.moments.size(); i++){
 	 
 	 node.index = 6 + i;
 	 node.value = c.moments.moments[i].value;
