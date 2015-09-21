@@ -65,6 +65,9 @@ namespace sonar_image_feature_extractor
      
      std::vector<LabeledCluster> label_cluster(base::samples::SonarScan &input, DetectorConfig &config, DebugData &dd, Label label);
      
+     void print_detected_features( const SonarFeatures &features, base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config);
+          
+     
      /**
       * Distance functions, to be used by the clustering algorithm
       */

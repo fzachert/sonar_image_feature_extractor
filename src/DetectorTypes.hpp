@@ -204,7 +204,8 @@ namespace sonar_image_feature_extractor
 	  SMOOTHING = 1,
 	  SOBEL = 2,
 	  THRESHOLD = 3,
-	  FEATURES = 4     
+	  FEATURES = 4,
+	  DETECTED_FEATURES = 5
    };
 
     enum THRESHOLD_MODE {
@@ -230,6 +231,7 @@ namespace sonar_image_feature_extractor
     int cluster_min_size;
     int cluster_max_size;
     double cluster_noise;
+    double feature_max_size;
     
     SMOOTH_MODE smooth_mode;
     DEBUG_MODE debug_mode;

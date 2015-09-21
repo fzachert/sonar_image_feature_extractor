@@ -10,6 +10,7 @@
 
 #include "SonarProcessing.hpp"
 #include "ProcessingTools.hpp"
+#include <base/logging.h>
 
 using namespace cv;
 using namespace sonar_image_feature_extractor;
@@ -81,15 +82,15 @@ SonarFeatures SonarProcessing::detect(base::samples::SonarScan &input, base::sam
   cv::Mat threshold_mat;
   
   
-  std::cout << "Start processing" << std::endl;
+  LOG_INFO_S << "Start processing";
   base::Time start = base::Time::now();
   std::vector<SonarPeak> peaks = process(input, debug, config, dd, threshold_mat);
-  std::cout << "Processing time: " << base::Time::now().toSeconds() - start.toSeconds() << std::endl;
+  LOG_INFO_S << "Processing time: " << base::Time::now().toSeconds() - start.toSeconds();
   
-  std::cout << "Start clustering with " << peaks.size() << " peaks." << std::endl;
+  LOG_INFO_S << "Start clustering with " << peaks.size() << " peaks.";
   start = base::Time::now();  
   std::vector<Cluster> clusters = cluster(peaks, config, input, debug);
-  std::cout << "Clustering time: " << base::Time::now().toSeconds() - start.toSeconds() << std::endl;
+  LOG_INFO_S << "Clustering time: " << base::Time::now().toSeconds() - start.toSeconds();
   
   process_points(clusters, input, threshold_mat);
   calculate_moments(clusters, input, threshold_mat);
@@ -118,10 +119,14 @@ SonarFeatures SonarProcessing::detect(base::samples::SonarScan &input, base::sam
       
       f.desc.label = label;      
       
-      result.features.push_back(f);
+      if( f.size.norm() < config.feature_max_size){
+	result.features.push_back(f);
+      }
+	
     }  
     
   }
+  
   
   return result;
 } 
@@ -329,4 +334,41 @@ double SonarProcessing::distance(SonarPeak *p1, SonarPeak *p2)
   return (p1->pos - p2->pos).norm();
 }
 
+void SonarProcessing::print_detected_features( const SonarFeatures &features, base::samples::SonarScan &input, base::samples::SonarScan &debug, const DetectorConfig &config){
+  
+  debug = input;
+  cv::Mat sonar_mat = cv::Mat(debug.number_of_beams, debug.number_of_bins, CV_8U, (void*) debug.data.data());
+  double range_scale = config.sonar_max_range / debug.number_of_bins;
+  
+  
+  for(std::vector<Feature>::const_iterator it = features.features.begin(); it != features.features.end(); it++){
+    
+    double size = it->size.norm();
+    double angular_size = std::asin( (size * 0.5) / it->range); 
+    
+    int min_range_id = it->range / range_scale;
+    int max_range_id = (it->range + size) / range_scale;
+    int avg_range_id = (it->range + (size * 0.5)) / range_scale;
+    int avg_angle_id = debug.number_of_beams + std::fabs(it->angle_h - input.start_bearing.rad) / input.angular_resolution.rad;
+    int min_angle_id = avg_angle_id + (angular_size / input.angular_resolution.rad);
+    int max_angle_id = avg_angle_id - (angular_size / input.angular_resolution.rad);
+
+/*    std::cout << "+++++++++++++++++++++++++++++++++" << std::endl;
+    std::cout << "Print feature with : " << std::endl;
+    std::cout << "range: " << it->range << ", size: " << it->size.transpose() << " and angle: " << it->angle_h << std::endl;
+    std::cout << "min_range_id: " << min_range_id << " max_range_id: " << max_range_id << " avg_range_id: " << avg_angle_id << std::endl;
+    std::cout << "min_angle_id: " << min_angle_id << " max_angle_id: " << max_angle_id << " avg_angle_id: " << avg_angle_id << std::endl;
+ */   
+    for(int range_id = min_range_id; range_id < max_range_id; range_id++){
+      sonar_mat.at<uint8_t>(avg_angle_id, range_id) = 255;      
+    }
+    
+    for(int angle_id = min_angle_id; angle_id < max_angle_id; angle_id++){
+      sonar_mat.at<uint8_t>(angle_id, avg_range_id) = 255;      
+    }    
+    
+    
+  }
+  
+}
 

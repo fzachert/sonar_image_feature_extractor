@@ -307,8 +307,8 @@ void process_points(std::vector<Cluster> &analysedCluster, base::samples::SonarS
   //Calculate moments
   for(std::vector<Cluster>::iterator it = analysedCluster.begin(); it != analysedCluster.end(); it++){
     
-    std::vector<double> sums(20, 0.0);
-    std::vector<double> temp_sums( 20, 0.0);
+    std::vector<double> sums(21, 0.0);
+    std::vector<double> temp_sums( 21, 0.0);
     int centerX = it->moments.center_of_mass.x();
     int centerY = it->moments.center_of_mass.y();
     double value;
@@ -316,7 +316,7 @@ void process_points(std::vector<Cluster> &analysedCluster, base::samples::SonarS
     
     for(int angle = it->min_angle_id; angle <= it->max_angle_id; angle++){
       
-      temp_sums.insert( temp_sums.begin(), 20, 0.0 );
+      temp_sums.insert( temp_sums.begin(), 21, 0.0 );
       double angle_sin = std::sin( ( angle - centerY ) * sonar_scan.angular_resolution.rad );  
       double angle_cos = std::cos( ( angle - centerY ) * sonar_scan.angular_resolution.rad );
       
@@ -344,7 +344,7 @@ void process_points(std::vector<Cluster> &analysedCluster, base::samples::SonarS
 	    }
 	  }
 
-	  temp_sums.insert( temp_sums.begin(), 20, 0.0);
+	  temp_sums.insert( temp_sums.begin(), 21, 0.0);
 	  
 	}else{
 	  
