@@ -14,6 +14,7 @@
 #include <base/samples/RigidBodyState.hpp>
 #include <base/Time.hpp>
 #include <base/samples/Pointcloud.hpp>
+#include <base/samples/SonarBeam.hpp>
 #include <vector>
 #include <math.h>
 #include "libsvm/svm.h"
@@ -251,7 +252,7 @@ namespace sonar_image_feature_extractor
     std::vector<Cluster> cluster;
     double entropy;
     base::samples::Pointcloud points; //Extracted peaks in cartesian-coordinates
-    
+    std::vector<base::samples::SonarBeam> center_beams;
   };
   
 

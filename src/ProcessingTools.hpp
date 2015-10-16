@@ -15,6 +15,7 @@
 #include <limits>
 #include <math.h>
 #include <base/samples/SonarScan.hpp>
+#include <base/samples/SonarBeam.hpp>
 #include <base/Eigen.hpp>
 #include "opencv2/opencv.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
@@ -390,6 +391,22 @@ void process_points(std::vector<Cluster> &analysedCluster, base::samples::SonarS
    
   
  } //End function
+  
+ std::vector<base::samples::SonarBeam> getCenterBeams( const base::samples::SonarScan &scan, int number_of_beams){ 
+   
+   std::vector<base::samples::SonarBeam> result;
+   
+   for( int i = 0; i < number_of_beams; i++){
+   
+     base::samples::SonarBeam beam;
+     double bearing = (((double) i) - (((double) number_of_beams) * 0.5) ) * scan.angular_resolution.rad;
+     scan.getSonarBeam( base::Angle::fromRad(bearing), beam);
+     result.push_back(beam);
+   }
+     
+   
+   return result;
+ }
   
 } //End namespace
 
