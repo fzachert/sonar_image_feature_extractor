@@ -253,6 +253,14 @@ namespace sonar_image_feature_extractor
     double entropy;
     base::samples::Pointcloud points; //Extracted peaks in cartesian-coordinates
     std::vector<base::samples::SonarBeam> center_beams;
+    
+    double time_preprocessing;
+    double time_segmentation;
+    double time_clustering;
+    double time_extraction;
+    double time_classification;
+    double time_total;
+    
   };
   
 

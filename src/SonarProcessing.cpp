@@ -80,22 +80,28 @@ SonarFeatures SonarProcessing::detect(base::samples::SonarScan &input, base::sam
   SonarFeatures result;
   result.time = input.time;
   cv::Mat threshold_mat;
-  
+  base::Time total_start_time = base::Time::now();
   
   LOG_INFO_S << "Start processing";
   base::Time start = base::Time::now();
   std::vector<SonarPeak> peaks = process(input, debug, config, dd, threshold_mat);
   LOG_INFO_S << "Processing time: " << base::Time::now().toSeconds() - start.toSeconds();
   
+  
   LOG_INFO_S << "Start clustering with " << peaks.size() << " peaks.";
   start = base::Time::now();  
   std::vector<Cluster> clusters = cluster(peaks, config, input, debug);
   LOG_INFO_S << "Clustering time: " << base::Time::now().toSeconds() - start.toSeconds();
+  dd.time_clustering = base::Time::now().toSeconds() - start.toSeconds();
   
+  start = base::Time::now();
   process_points(clusters, input, threshold_mat);
   calculate_moments(clusters, input, threshold_mat);
+  dd.time_extraction = base::Time::now().toSeconds() - start.toSeconds();
   
   dd.cluster = clusters;
+  
+  start = base::Time::now();
   
   for(std::vector<Cluster>::iterator it = clusters.begin(); it != clusters.end(); it++)
   {
@@ -126,7 +132,8 @@ SonarFeatures SonarProcessing::detect(base::samples::SonarScan &input, base::sam
     }  
     
   }
-  
+  dd.time_classification = base::Time::now().toSeconds() - start.toSeconds();
+  dd.time_total = base::Time::now().toSeconds() - total_start_time.toSeconds();
   
   return result;
 } 
@@ -146,16 +153,21 @@ std::vector<SonarPeak> SonarProcessing::process(base::samples::SonarScan &input,
     debug = input;
   }
   
+  base::Time start_time = base::Time::now();
+  
   Mat sonar_mat;
   sonar_mat = Mat(input.number_of_beams, input.number_of_bins, CV_8U, (void*) input.data.data() );
   sonar_mat.copyTo(threshold_mat);
   
   smooth( threshold_mat, config.blur, config.smooth_mode);
   
+  dd.time_preprocessing = base::Time::now().toSeconds() - start_time.toSeconds();
+  
   if(config.debug_mode == SMOOTHING){
     debug.data.assign(threshold_mat.datastart, threshold_mat.dataend);
   }
     
+  start_time = base::Time::now();
   
   threshold( threshold_mat, config.threshold_mode, config.threshold, config.adaptive_threshold_neighborhood);  
   
@@ -200,7 +212,7 @@ std::vector<SonarPeak> SonarProcessing::process(base::samples::SonarScan &input,
     
     peaks.push_back(peak);
   }
-  
+  dd.time_segmentation = base::Time::now().toSeconds() - start_time.toSeconds();
   
 return peaks;  
   
